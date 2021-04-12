@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\NFeService;
 use Illuminate\Http\Request;
+use NFePHP\NFe\Complements;
 
 class NFeController extends Controller
 {
@@ -34,7 +36,49 @@ class NFeController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $config = [
+
+            "atualizacao" => date('Y-m-d h:i:s'),
+            "tpAmb" => 2,
+            "razaosocial" => "FORZZA CENTRO MECANICO AUTOMOTIVO LTDA:06103611000141",
+            "siglaUF" => "RS",
+            "cnpj" => "06103611000141",
+            "schemes" => "PL_008i2",
+            "versao" => "4.00",
+            "tokenIBPT" => "",
+            "CSC" => "",
+            "CSCid" => "",
+            "aProxyConf" => [
+                "proxyIp" => "",
+                "proxyPort" => "",
+                "proxyUser" => "",
+                "proxyPass" => ""
+            ]
+        ];
+
+        $nfeService = new NFeService($config);
+        $xml = $nfeService->gerarNFe();
+
+        $xmlAssinado = $nfeService->assinarXml($xml['xml']);
+
+
+
+        if(isset($xmlAssinado) && !empty($xmlAssinado)) {
+            $recibo = $nfeService->enviarLote($xmlAssinado);
+        }
+
+        if(isset($recibo) && !empty($recibo)) {
+            $protocolo = $nfeService->consultarStatus($recibo);
+        }
+
+        if(isset($protocolo) && !empty($protocolo)) {
+            $xmlProtocolado = $nfeService->inserirProtocolo($xmlAssinado, $protocolo);
+        }
+
+        echo $xml['chave_nfe'];
+        if(isset($xmlProtocolado) && !empty($xmlProtocolado)) {
+            $nfeService->salvarXML($xmlProtocolado, $xml['chave_nfe']);
+        }
     }
 
     /**

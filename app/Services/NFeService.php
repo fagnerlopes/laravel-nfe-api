@@ -3,7 +3,16 @@
 
 namespace App\Services;
 
+use Exception;
+use DateTime;
+use DateTimeZone;
+use Illuminate\Support\Facades\Storage;
+use NFePHP\Common\Certificate;
+use NFePHP\NFe\Common\Standardize;
+use NFePHP\NFe\Complements;
 use NFePHP\NFe\Make;
+use NFePHP\NFe\Tools;
+use stdClass;
 
 /**
  * Class NFeService
@@ -12,27 +21,29 @@ use NFePHP\NFe\Make;
 class NFeService
 {
     protected $configJson;
+    protected $result;
+
 
     /**
      * NFeService constructor.
      * @param array $config
      */
-    public function __construct(array $config)
+    public function __construct(array $config = [])
     {
-        if($config) {
+        if ($config) {
             $this->configJson = json_encode($config);
         } else {
             $configDefaul = [
-                "atualizacao" => "2015-10-02 06:01:21",
+                "atualizacao" => date('Y-m-d h:i:s'),
                 "tpAmb" => 2,
-                "razaosocial" => "Fake Materiais de construção Ltda",
-                "siglaUF" => "SP",
-                "cnpj" => "00716345000119",
+                "razaosocial" => "FORZZA CENTRO MECANICO AUTOMOTIVO LTDA:06103611000141",
+                "siglaUF" => "RS",
+                "cnpj" => "06103611000141",
                 "schemes" => "PL_008i2",
-                "versao" => "3.10",
-                "tokenIBPT" => "AAAAAAA",
-                "CSC" => "GPB0JBWLUR6HWFTVEAS6RJ69GPCROFPBBB8G",
-                "CSCid" => "000002",
+                "versao" => "4.00",
+                "tokenIBPT" => "",
+                "CSC" => "",
+                "CSCid" => "",
                 "aProxyConf" => [
                     "proxyIp" => "",
                     "proxyPort" => "",
@@ -44,20 +55,19 @@ class NFeService
             $this->configJson = json_encode($configDefaul);
 
         }
-
-
     }
 
-    public function gerarNFe(StdClass $nfe)
+
+    public function gerarNFe()
     {
         $nfe = new Make();
 
-        $stdPrincipal = new \stdClass();
-        $stdPrincipal->versao = '4.00'; //versão do layout (string)
-        //$stdPrincipal->Id = 'NFe35150271780456000160550010000000021800700082'; //se o Id de 44 digitos não for passado será gerado automaticamente
-        $stdPrincipal->pk_nItem = null;//deixe essa variavel sempre como NULL
+        $stdInfNfe = new stdClass();
+        $stdInfNfe->versao = '4.00'; //versão do layout (string)
+        $stdInfNfe->Id = null; //se o Id de 44 digitos não for passado será gerado automaticamente
+        $stdInfNfe->pk_nItem = null;//deixe essa variavel sempre como NULL
 
-        $nfe->taginfNFe($stdPrincipal);
+        $nfe->taginfNFe($stdInfNfe);
 
         $stdIdeNfe = new stdClass();
         $stdIdeNfe->cUF = 43;
@@ -66,7 +76,7 @@ class NFeService
         $stdIdeNfe->indPag = 0; //NÃO EXISTE MAIS NA VERSÃO 4.00
         $stdIdeNfe->mod = 55;
         $stdIdeNfe->serie = 1;
-        $stdIdeNfe->nNF = 167;
+        $stdIdeNfe->nNF = 170;
         $stdIdeNfe->dhEmi = self::getDateIso();
         $stdIdeNfe->dhSaiEnt = self::getDateIso();
         $stdIdeNfe->tpNF = 1;
@@ -74,7 +84,7 @@ class NFeService
         $stdIdeNfe->cMunFG = 4305108;
         $stdIdeNfe->tpImp = 1;
         $stdIdeNfe->tpEmis = 1;
-        $stdIdeNfe->cDV = 2;
+        $stdIdeNfe->cDV = null;
         $stdIdeNfe->tpAmb = 2;
         $stdIdeNfe->finNFe = 1;
         $stdIdeNfe->indFinal = 0;
@@ -101,45 +111,45 @@ class NFeService
         $nfe->tagemit($stdEmitente);
 
         $stdEnderecoEmitente = new stdClass();
-        $stdEnderecoEmitente->xLgr   = "AVENIDA RIO BRANCO TESTE";
-        $stdEnderecoEmitente->nro    = "1512";
-        $stdEnderecoEmitente->xCpl   = "SALA 02";
-        $stdEnderecoEmitente->xBairro= "RIO BRANCO";
-        $stdEnderecoEmitente->cMun   = 4305108;
-        $stdEnderecoEmitente->xMun   = "CAXIAS DO SUL";
-        $stdEnderecoEmitente->UF     = "RS";
-        $stdEnderecoEmitente->CEP    = "95096000";
-        $stdEnderecoEmitente->cPais  = 1058;
-        $stdEnderecoEmitente->xPais  = "Brasil";
-        $stdEnderecoEmitente->fone   = "5430252422";
+        $stdEnderecoEmitente->xLgr = "AVENIDA RIO BRANCO TESTE";
+        $stdEnderecoEmitente->nro = "1512";
+        $stdEnderecoEmitente->xCpl = "SALA 02";
+        $stdEnderecoEmitente->xBairro = "RIO BRANCO";
+        $stdEnderecoEmitente->cMun = 4305108;
+        $stdEnderecoEmitente->xMun = "CAXIAS DO SUL";
+        $stdEnderecoEmitente->UF = "RS";
+        $stdEnderecoEmitente->CEP = "95096000";
+        $stdEnderecoEmitente->cPais = 1058;
+        $stdEnderecoEmitente->xPais = "Brasil";
+        $stdEnderecoEmitente->fone = "5430252422";
 
         $nfe->tagenderEmit($stdEnderecoEmitente);
 
         $stdDestinatário = new stdClass();
-        $stdDestinatário->xNome         = "NF-E EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL";
-        $stdDestinatário->indIEDest     = 2;
-        $stdDestinatário->IE            = null;
-        $stdDestinatário->ISUF          = null;
-        $stdDestinatário->IM            = null;
-        $stdDestinatário->email         = null;
-        $stdDestinatário->CNPJ          = null; //indicar apenas um CNPJ ou CPF ou idEstrangeiro
-        $stdDestinatário->CPF           = "64831124087";
+        $stdDestinatário->xNome = "NF-E EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL";
+        $stdDestinatário->indIEDest = 2;
+        $stdDestinatário->IE = null;
+        $stdDestinatário->ISUF = null;
+        $stdDestinatário->IM = null;
+        $stdDestinatário->email = null;
+        $stdDestinatário->CNPJ = null; //indicar apenas um CNPJ ou CPF ou idEstrangeiro
+        $stdDestinatário->CPF = "00132986078";
         $stdDestinatário->idEstrangeiro = null;
 
         $nfe->tagdest($stdDestinatário);
 
         $stdEnderecoDestinatario = new stdClass();
-        $stdEnderecoDestinatario->xLgr    = "Garibaldi";
-        $stdEnderecoDestinatario->nro     = "803";
-        $stdEnderecoDestinatario->xCpl    = null;
+        $stdEnderecoDestinatario->xLgr = "Garibaldi";
+        $stdEnderecoDestinatario->nro = "803";
+        $stdEnderecoDestinatario->xCpl = null;
         $stdEnderecoDestinatario->xBairro = "Centro";
-        $stdEnderecoDestinatario->cMun    = 4305108;
-        $stdEnderecoDestinatario->xMun    = "CAXIAS DO SUL";
-        $stdEnderecoDestinatario->UF      = "RS";
-        $stdEnderecoDestinatario->CEP     = "95012270";
-        $stdEnderecoDestinatario->cPais   = 1058;
-        $stdEnderecoDestinatario->xPais   = "Brasil";
-        $stdEnderecoDestinatario->fone    = "0543027179";
+        $stdEnderecoDestinatario->cMun = 4305108;
+        $stdEnderecoDestinatario->xMun = "CAXIAS DO SUL";
+        $stdEnderecoDestinatario->UF = "RS";
+        $stdEnderecoDestinatario->CEP = "95012270";
+        $stdEnderecoDestinatario->cPais = 1058;
+        $stdEnderecoDestinatario->xPais = "Brasil";
+        $stdEnderecoDestinatario->fone = "0543027179";
 
         $nfe->tagenderDest($stdEnderecoDestinatario);
 
@@ -147,47 +157,47 @@ class NFeService
         $stdAutorizadoXml->CNPJ = null; //indicar um CNPJ ou CPF
         $stdAutorizadoXml->CPF = '00132986078';
 
-        $nfe->tagautXML($stdAutorizadoXml);
+        //$nfe->tagautXML($stdAutorizadoXml);
 
         $stdProdutoItem = new stdClass();
-        $stdProdutoItem->item     = 1; //item da NFe
-        $stdProdutoItem->cProd    = 3114;
-        $stdProdutoItem->cEAN     = "SEM GTIN";
-        $stdProdutoItem->xProd    = "FAGNER - MOTOR COMPRESSOR - MFS - RHF5 - 44,93 / 58mm - 6+6 Palhetas";
-        $stdProdutoItem->NCM      = "84149039";
-        $stdProdutoItem->cBenef   = null; //incluido no layout 4.00
-        $stdProdutoItem->EXTIPI   = "000";
-        $stdProdutoItem->CFOP     = 5405;
-        $stdProdutoItem->uCom     = "UN";
-        $stdProdutoItem->qCom     = 3;
-        $stdProdutoItem->vUnCom   = 69.00;
+        $stdProdutoItem->item = 1; //item da NFe
+        $stdProdutoItem->cProd = 3114;
+        $stdProdutoItem->cEAN = "SEM GTIN";
         $stdProdutoItem->cEANTrib = "SEM GTIN";
-        $stdProdutoItem->uTrib    = "UN";
-        $stdProdutoItem->qTrib    = 3.00;
-        $stdProdutoItem->vUnTrib  = 69.00;
-        $stdProdutoItem->vProd    = (double) $stdProdutoItem->qTrib * $stdProdutoItem->vUnTrib;
-        $stdProdutoItem->vFrete   = 0.00;
-        $stdProdutoItem->vSeg     = 0.00;
-        $stdProdutoItem->vDesc    = 0.00;
-        $stdProdutoItem->vOutro   = 0.00;
-        $stdProdutoItem->indTot   = 1;
-        $stdProdutoItem->xPed     = null;
+        $stdProdutoItem->xProd = "FAGNER - MOTOR COMPRESSOR - MFS - RHF5 - 44,93 / 58mm - 6+6 Palhetas";
+        $stdProdutoItem->NCM = "84149039";
+        $stdProdutoItem->cBenef = null; //incluido no layout 4.00
+        $stdProdutoItem->EXTIPI = null;
+        $stdProdutoItem->CFOP = 5405;
+        $stdProdutoItem->uCom = "UN";
+        $stdProdutoItem->qCom = 3.00;
+        $stdProdutoItem->vUnCom = 69.00;
+        $stdProdutoItem->uTrib = "UN";
+        $stdProdutoItem->qTrib = 3.00;
+        $stdProdutoItem->vUnTrib = self::xmlFormatNumber(69.00);
+        $stdProdutoItem->vProd = (double)$stdProdutoItem->qTrib * $stdProdutoItem->vUnTrib;
+        $stdProdutoItem->vFrete = null;
+        $stdProdutoItem->vSeg = null;
+        $stdProdutoItem->vDesc = null;
+        $stdProdutoItem->vOutro = null;
+        $stdProdutoItem->indTot = 1;
+        $stdProdutoItem->xPed = null;
         $stdProdutoItem->nItemPed = null;
-        $stdProdutoItem->nFCI     = null;
+        $stdProdutoItem->nFCI = null;
 
         $nfe->tagprod($stdProdutoItem);
 
 
         $stdEspecificacaoST = new stdClass();
-        $stdEspecificacaoST->item      = 1; //item da NFe
-        $stdEspecificacaoST->CEST      = '0103500';
-        $stdEspecificacaoST->indEscala = 'N'; //incluido no layout 4.00
-        $stdEspecificacaoST->CNPJFab   = '12345678901234'; //incluido no layout 4.00
+        $stdEspecificacaoST->item = 1; //item da NFe
+        $stdEspecificacaoST->CEST = '0103500';
+        //$stdEspecificacaoST->indEscala = null; //incluido no layout 4.00
+        //$stdEspecificacaoST->CNPJFab = null; //incluido no layout 4.00
 
         $nfe->tagCEST($stdEspecificacaoST);
 
         $stdImpostoItem = new stdClass();
-        $stdImpostoItem->item     = 1; //item da NFe
+        $stdImpostoItem->item = 1; //item da NFe
         $stdImpostoItem->vTotTrib = 39.16;
 
         $nfe->tagimposto($stdImpostoItem);
@@ -232,25 +242,25 @@ class NFeService
 //
 //        $nfe->tagICMS($stdICMSItem);
 
-        $stdICMSSTRet = new stdClass();
-        $stdICMSSTRet->item = 1; //item da NFe
-        $stdICMSSTRet->orig = 0;
-        $stdICMSSTRet->CST = '60';
-        $stdICMSSTRet->vBCSTRet = 2.49;
-        $stdICMSSTRet->vICMSSTRet = 0.42;
-        $stdICMSSTRet->vBCSTDest = null;
-        $stdICMSSTRet->vICMSSTDest = null;
-        $stdICMSSTRet->vBCFCPSTRet = null;
-        $stdICMSSTRet->pFCPSTRet = null;
-        $stdICMSSTRet->vFCPSTRet = null;
-        $stdICMSSTRet->pST = null;
-        $stdICMSSTRet->vICMSSubstituto = null;
-        $stdICMSSTRet->pRedBCEfet = null;
-        $stdICMSSTRet->vBCEfet = null;
-        $stdICMSSTRet->pICMSEfet = null;
-        $stdICMSSTRet->vICMSEfet = null;
-
-        $nfe->tagICMSST($stdICMSSTRet);
+//        $stdICMSSTRet = new stdClass();
+//        $stdICMSSTRet->item = 1; //item da NFe
+//        $stdICMSSTRet->orig = 0;
+//        $stdICMSSTRet->CST = '60';
+//        $stdICMSSTRet->vBCSTRet = 2.49;
+//        $stdICMSSTRet->vICMSSTRet = 0.42;
+//        $stdICMSSTRet->vBCSTDest = null;
+//        $stdICMSSTRet->vICMSSTDest = null;
+//        $stdICMSSTRet->vBCFCPSTRet = null;
+//        $stdICMSSTRet->pFCPSTRet = null;
+//        $stdICMSSTRet->vFCPSTRet = null;
+//        $stdICMSSTRet->pST = null;
+//        $stdICMSSTRet->vICMSSubstituto = null;
+//        $stdICMSSTRet->pRedBCEfet = null;
+//        $stdICMSSTRet->vBCEfet = null;
+//        $stdICMSSTRet->pICMSEfet = null;
+//        $stdICMSSTRet->vICMSEfet = null;
+//
+//        $nfe->tagICMSST($stdICMSSTRet);
 
         $stdICMSSNItem = new stdClass();
         $stdICMSSNItem->item = 1; //item da NFe
@@ -294,11 +304,11 @@ class NFeService
         $stdIPIItem->qSelo = null;
         $stdIPIItem->cEnq = '999';
         $stdIPIItem->CST = '99';
-        $stdIPIItem->vIPI = 150.00;
-        $stdIPIItem->vBC = 1000.00;
-        $stdIPIItem->pIPI = 15.00;
-        $stdIPIItem->qUnid = 0.00;
-        $stdIPIItem->vUnid = 0.00;
+        $stdIPIItem->vIPI = 0.00;
+        $stdIPIItem->vBC = 0.00;
+        $stdIPIItem->pIPI = 0.00;
+        $stdIPIItem->qUnid = null;
+        $stdIPIItem->vUnid = null;
 
         $nfe->tagIPI($stdIPIItem);
 
@@ -324,6 +334,7 @@ class NFeService
 
         $nfe->tagCOFINS($stdCOFINSItem);
 
+        // se não for passado a lib irá calcular com base nos itens
         $stdTotaisICMSItem = new stdClass();
         $stdTotaisICMSItem->vBC = 1000.00;
         $stdTotaisICMSItem->vICMS = 1000.00;
@@ -346,109 +357,231 @@ class NFeService
         $stdTotaisICMSItem->vNF = 1000.00;
         $stdTotaisICMSItem->vTotTrib = 1000.00;
 
-        $nfe->tagICMSTot($stdTotaisICMSItem);
+        //$nfe->tagICMSTot();
 
         $stdFrete = new stdClass();
-        $stdFrete->modFrete = 1;
+        $stdFrete->modFrete = 9;
 
         $nfe->tagtransp($stdFrete);
 
-        $stdTransportadora = new stdClass();
-        $stdTransportadora->xNome = 'Rodo Fulano';
-        $stdTransportadora->IE = '12345678901';
-        $stdTransportadora->xEnder = 'Rua Um, sem numero';
-        $stdTransportadora->xMun = 'Cotia';
-        $stdTransportadora->UF = 'SP';
-        $stdTransportadora->CNPJ = '12345678901234';//só pode haver um ou CNPJ ou CPF, se um deles é especificado o outro deverá ser null
-        $stdTransportadora->CPF = null;
+//        $stdTransportadora = new stdClass();
+//        $stdTransportadora->xNome = 'Rodo Fulano';
+//        $stdTransportadora->IE = '12345678901';
+//        $stdTransportadora->xEnder = 'Rua Um, sem numero';
+//        $stdTransportadora->xMun = 'Cotia';
+//        $stdTransportadora->UF = 'SP';
+//        $stdTransportadora->CNPJ = '12345678901234';//só pode haver um ou CNPJ ou CPF, se um deles é especificado o outro deverá ser null
+//        $stdTransportadora->CPF = null;
+//
+//        $nfe->tagtransporta($stdTransportadora);
 
-        $nfe->tagtransporta($stdTransportadora);
-
-        $stdVeiculoTrator = new stdClass();
-        $stdVeiculoTrator->placa = 'ABC1111';
-        $stdVeiculoTrator->UF = 'RJ';
-        $stdVeiculoTrator->RNTC = '999999';
-
-        $nfe->tagveicTransp($stdVeiculoTrator);
-
-        $stdReboque = new stdClass();
-        $stdReboque->placa = 'BCB0897';
-        $stdReboque->UF = 'SP';
-        $stdReboque->RNTC = '123456';
-
-        $nfe->tagreboque($stdReboque);
+//        $stdVeiculoTrator = new stdClass();
+//        $stdVeiculoTrator->placa = 'ABC1111';
+//        $stdVeiculoTrator->UF = 'RJ';
+//        $stdVeiculoTrator->RNTC = '999999';
+//
+//        $nfe->tagveicTransp($stdVeiculoTrator);
+//
+//        $stdReboque = new stdClass();
+//        $stdReboque->placa = 'BCB0897';
+//        $stdReboque->UF = 'SP';
+//        $stdReboque->RNTC = '123456';
+//
+//        $nfe->tagreboque($stdReboque);
 
         $stdVolumes = new stdClass();
         $stdVolumes->item = 1; //indicativo do numero do volume
-        $stdVolumes->qVol = 2;
-        $stdVolumes->esp = 'caixa';
-        $stdVolumes->marca = 'OLX';
-        $stdVolumes->nVol = '11111';
-        $stdVolumes->pesoL = 10.50;
-        $stdVolumes->pesoB = 11.00;
+        $stdVolumes->qVol = 3;
+        $stdVolumes->esp = '';
+        $stdVolumes->marca = '';
+        $stdVolumes->nVol = '';
+        $stdVolumes->pesoL = 0.00;
+        $stdVolumes->pesoB = 0.00;
 
         $nfe->tagvol($stdVolumes);
 
         $stdFaturaCobranca = new stdClass();
         $stdFaturaCobranca->nFat = '1233';
-        $stdFaturaCobranca->vOrig = 1254.22;
-        $stdFaturaCobranca->vDesc = null;
-        $stdFaturaCobranca->vLiq = 1254.22;
+        $stdFaturaCobranca->vOrig = 207.00;
+        $stdFaturaCobranca->vDesc = 0.00;
+        $stdFaturaCobranca->vLiq = 207.00;
 
         $nfe->tagfat($stdFaturaCobranca);
 
-        $stdDuplicata = new stdClass();
-        $stdDuplicata->nDup = '1233-1';
-        $stdDuplicata->dVenc = '2017-08-22';
-        $stdDuplicata->vDup = 1254.22;
+//        $stdDuplicata = new stdClass();
+//        $stdDuplicata->nDup = '1233';
+//        //$stdDuplicata->dVenc = '2017-08-22';
+//        $stdDuplicata->vDup = 207.00;
+//
+//        $nfe->tagdup($stdDuplicata);
 
-        $nfe->tagdup($stdDuplicata);
+        $stdPagamento = new StdClass();
+        $stdPagamento->vTroco = 0.00;
 
-        $stdFormaPgto = new stdClass();
-        $stdFormaPgto->tPag = '03';
-        $stdFormaPgto->vPag = 200.00; //Obs: deve ser informado o valor pago pelo cliente
-        $stdFormaPgto->CNPJ = '12345678901234';
-        $stdFormaPgto->tBand = '01';
-        $stdFormaPgto->cAut = '3333333';
-        $stdFormaPgto->tpIntegra = 1; //incluso na NT 2015/002
-        $stdFormaPgto->indPag = '0'; //0= Pagamento à Vista 1= Pagamento à Prazo
+        $nfe->tagpag($stdPagamento);
 
-        $nfe->tagdetPag($stdFormaPgto);
+        $stdDetalhePagamento = new stdClass();
+        $stdDetalhePagamento->tPag = '01';
+        $stdDetalhePagamento->vPag = $stdProdutoItem->vProd; //Obs: deve ser informado o valor pago pelo cliente
+        $stdDetalhePagamento->CNPJ = '';
+        $stdDetalhePagamento->tBand = '';
+        $stdDetalhePagamento->cAut = '';
+        $stdDetalhePagamento->tpIntegra = 2; //incluso na NT 2015/002
+        $stdDetalhePagamento->indPag = '0'; //0= Pagamento à Vista 1= Pagamento à Prazo
+
+        $nfe->tagdetPag($stdDetalhePagamento);
 
         $stdInfoAdic = new stdClass();
         $stdInfoAdic->infAdFisco = 'informacoes para o fisco';
-        $stdInfoAdic->infCpl = 'informacoes complementares';
+        $stdInfoAdic->infCpl = '>DOCUMENTO EMITIDO POR ME OU EPP OPTANTE PELO SIMPLES NACIONAL E NAO GERA DIREITO A CREDITO DE ICMS, IPI OU ISS.|Valor Total Aprox. dos Tributos R$ 39,16 ( 18,92%)';
 
         $nfe->taginfAdic($stdInfoAdic);
 
+        header('Content-type: text/xml; charset=UTF-8');
+
         $xml = $nfe->montaNFe();
 
-        $erros = $nfe->getErrors();
+        $errors = $nfe->getErrors();
 
-        echo json_encode($nfe);
+        $chave = $nfe->getChave();
+
+        $this->result = [
+            'chave_nfe' => $chave,
+            'xml' => $xml
+
+        ];
+
+        return $this->result;
 
 
     }
 
-    public static function getDateIso()
+    /**
+     * @param $xml
+     * @return string
+     */
+    public function assinarXml($xml)
+    {
+        try {
+
+            $certificadoDigital = Storage::get('certificado.pfx');
+            $tools = new Tools($this->configJson, Certificate::readPfx($certificadoDigital, '123456'));
+
+            return $xmlAssinado = $tools->signNFe($xml); // O conteúdo do XML assinado fica armazenado na variável $xmlAssinado
+        } catch (\Exception $e) {
+            //aqui você trata possíveis exceptions da assinatura
+            exit($e->getMessage());
+        }
+    }
+
+    /**
+     * @param $recibo
+     * @return string
+     */
+    public function consultarStatus($recibo)
+    {
+        try {
+            $certificadoDigital = Storage::get('certificado.pfx');
+            $tools = new Tools($this->configJson, Certificate::readPfx($certificadoDigital, '123456'));
+            $protocolo = $tools->sefazConsultaRecibo($recibo);
+            return $protocolo;
+        } catch (Exception $e) {
+            //aqui você trata possíveis exceptions da consulta
+            exit($e->getMessage());
+        }
+    }
+
+    /**
+     * @param $xmlAssinado
+     * @return mixed
+     */
+    public function enviarLote($xmlAssinado)
+    {
+        try {
+            $certificadoDigital = Storage::get('certificado.pfx');
+            $tools = new Tools($this->configJson, Certificate::readPfx($certificadoDigital, '123456'));
+            $idLote = str_pad(100, 15, '0', STR_PAD_LEFT); // Identificador do lote
+            $resp = $tools->sefazEnviaLote([$xmlAssinado], $idLote);
+
+            $st = new Standardize();
+            $std = $st->toStd($resp);
+            if ($std->cStat != 103) {
+                //erro registrar e voltar
+                exit("[$std->cStat] $std->xMotivo");
+            }
+            $recibo = $std->infRec->nRec; // Vamos usar a variável $recibo para consultar o status da nota
+
+            return $recibo;
+        } catch (Exception $e) {
+            //aqui você trata possiveis exceptions do envio
+            exit($e->getMessage());
+        }
+    }
+
+    /**
+     * @param $xmlAssinado
+     * @param $protocolo
+     * @return string
+     */
+    public function inserirProtocolo($xmlAssinado, $protocolo)
+    {
+        $request = $xmlAssinado;
+        $response = $protocolo;
+
+        try {
+            $xml = Complements::toAuthorize($request, $response);
+            header('Content-type: text/xml; charset=UTF-8');
+            return $xml;
+        } catch (Exception $e) {
+            return "Erro: " . $e->getMessage();
+        }
+    }
+
+    /**
+     * @param $xml
+     * @return string
+     */
+    public function salvarXML($xml, $chave)
+    {
+        try {
+            //Storage::put('xmlDfe-' + $chave, $xml);
+            //Storage::put('xmlDfe-' + $chave, $xml);
+            Storage::disk('local')->put('example.txt', 'Contents');
+
+        } catch( Exception $e) {
+            return "Erro: " . $e->getMessage();
+        }
+    }
+
+    /**
+     * @param float $number
+     * @param int $decimals
+     * @return string
+     */
+    public static function xmlFormatNumber(float $number, int $decimals = 2)
+    {
+        return number_format((float)$number, $decimals, ".", "");
+    }
+
+    /**
+     * @return string
+     */
+    public static function getDateIso(): string
     {
         $fuso = new DateTimeZone('America/Sao_Paulo');
         $date = new DateTime();
         $date->setTimezone($fuso);
 
-        return $date->format(Datetime::ATOM);
+        return $date->format('Y-m-d\TH:i:sP');
     }
 
-    public function jsonSerialize() {
+    /**
+     * @return array
+     */
+    public function jsonSerialize()
+    {
         //$vars = array_merge(get_object_vars($this),parent::jsonSerialize());
         //return $vars;
         return get_object_vars($this);
     }
-
-
-
-
-
-
-
 }
