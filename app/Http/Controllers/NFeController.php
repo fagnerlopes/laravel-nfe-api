@@ -125,4 +125,35 @@ class NFeController extends Controller
     {
         //
     }
+
+    public function cancelarNFe()
+    {
+        //$NfeInfo = $request->all();
+        $config = [
+
+            "atualizacao" => date('Y-m-d h:i:s'),
+            "tpAmb" => 2,
+            "razaosocial" => "FORZZA CENTRO MECANICO AUTOMOTIVO LTDA:06103611000141",
+            "siglaUF" => "RS",
+            "cnpj" => "06103611000141",
+            "schemes" => "PL_008i2",
+            "versao" => "4.00",
+            "tokenIBPT" => "",
+            "CSC" => "",
+            "CSCid" => "",
+            "aProxyConf" => [
+                "proxyIp" => "",
+                "proxyPort" => "",
+                "proxyUser" => "",
+                "proxyPass" => ""
+            ]
+        ];
+
+        $nfeService = new NFeService($config);
+        $response = $nfeService->cancelarNFe();
+
+        return $response;
+    }
+
+
 }

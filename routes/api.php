@@ -20,5 +20,8 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 
 Route::resource('/nfe', \App\Http\Controllers\NFeController::class);
 
+Route::post('/nfe/cancelar', 'App\Http\Controllers\NFeController@cancelarNFe');
+
+
 
 

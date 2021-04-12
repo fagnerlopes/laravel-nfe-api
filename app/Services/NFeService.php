@@ -76,7 +76,7 @@ class NFeService
         $stdIdeNfe->indPag = 0; //NÃO EXISTE MAIS NA VERSÃO 4.00
         $stdIdeNfe->mod = 55;
         $stdIdeNfe->serie = 1;
-        $stdIdeNfe->nNF = 170;
+        $stdIdeNfe->nNF = 173;
         $stdIdeNfe->dhEmi = self::getDateIso();
         $stdIdeNfe->dhSaiEnt = self::getDateIso();
         $stdIdeNfe->tpNF = 1;
@@ -546,11 +546,57 @@ class NFeService
         try {
             //Storage::put('xmlDfe-' + $chave, $xml);
             //Storage::put('xmlDfe-' + $chave, $xml);
-            Storage::disk('local')->put('example.txt', 'Contents');
+            Storage::disk('local')->put('arquivos_protocolados/xmlDfe-' . $chave . '.xml', (string) $xml);
 
         } catch( Exception $e) {
             return "Erro: " . $e->getMessage();
         }
+    }
+
+    public function cancelarNFe()
+    {
+        try {
+            $certificadoDigital = Storage::get('certificado.pfx');
+            $tools = new Tools($this->configJson, Certificate::readPfx($certificadoDigital, '123456'));
+            $tools->model('55');
+
+            $chave = '43210406103611000141550010000001731013821394';
+            $xJust = 'Erro de digitação nos dados dos produtos';
+            $nProt = '143210000197293';
+            $response = $tools->sefazCancela($chave, $xJust, $nProt);
+
+            //você pode padronizar os dados de retorno atraves da classe abaixo
+            //de forma a facilitar a extração dos dados do XML
+            //NOTA: mas lembre-se que esse XML muitas vezes será necessário,
+            //      quando houver a necessidade de protocolos
+            $stdCl = new Standardize($response);
+            //nesse caso $std irá conter uma representação em stdClass do XML
+            $std = $stdCl->toStd();
+            //nesse caso o $arr irá conter uma representação em array do XML
+            $arr = $stdCl->toArray();
+            //nesse caso o $json irá conter uma representação em JSON do XML
+            $json = $stdCl->toJson();
+
+            //verifique se o evento foi processado
+            if ($std->cStat != 128) {
+                //houve alguma falha e o evento não foi processado
+                //TRATAR
+            } else {
+                $cStat = $std->retEvento->infEvento->cStat;
+                if ($cStat == '101' || $cStat == '135' || $cStat == '155') {
+                    //SUCESSO PROTOCOLAR A SOLICITAÇÂO ANTES DE GUARDAR
+                    $xml = Complements::toAuthorize($tools->lastRequest, $response);
+                    //grave o XML protocolado
+                    return $xml;
+                } else {
+                    //houve alguma falha no evento
+                    //TRATAR
+                }
+            }
+        } catch (\Exception $e) {
+            echo $e->getMessage();
+        }
+
     }
 
     /**
@@ -575,13 +621,4 @@ class NFeService
         return $date->format('Y-m-d\TH:i:sP');
     }
 
-    /**
-     * @return array
-     */
-    public function jsonSerialize()
-    {
-        //$vars = array_merge(get_object_vars($this),parent::jsonSerialize());
-        //return $vars;
-        return get_object_vars($this);
-    }
 }
