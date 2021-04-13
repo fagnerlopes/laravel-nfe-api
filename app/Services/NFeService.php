@@ -21,14 +21,15 @@ use stdClass;
 class NFeService
 {
     protected $configJson;
-    protected $result;
+    protected $tools;
 
 
     /**
      * NFeService constructor.
      * @param array $config
+     * @throws \Illuminate\Contracts\Filesystem\FileNotFoundException
      */
-    public function __construct(array $config = [])
+    public function __construct(array $config)
     {
         if ($config) {
             $this->configJson = json_encode($config);
@@ -53,6 +54,7 @@ class NFeService
             ];
 
             $this->configJson = json_encode($configDefaul);
+            //$certificate = Storage::disk('local')->get('certificado.pfx');
 
         }
     }
@@ -76,7 +78,7 @@ class NFeService
         $stdIdeNfe->indPag = 0; //NÃO EXISTE MAIS NA VERSÃO 4.00
         $stdIdeNfe->mod = 55;
         $stdIdeNfe->serie = 1;
-        $stdIdeNfe->nNF = 173;
+        $stdIdeNfe->nNF = 175;
         $stdIdeNfe->dhEmi = self::getDateIso();
         $stdIdeNfe->dhSaiEnt = self::getDateIso();
         $stdIdeNfe->tpNF = 1;
@@ -439,21 +441,17 @@ class NFeService
 
         header('Content-type: text/xml; charset=UTF-8');
 
+        //$errors = $nfe->getErrors();
         $xml = $nfe->montaNFe();
-
-        $errors = $nfe->getErrors();
-
         $chave = $nfe->getChave();
 
-        $this->result = [
-            'chave_nfe' => $chave,
-            'xml' => $xml
 
+        $result = [
+            'xml' => $xml,
+            'chave_nfe' => $chave
         ];
 
-        return $this->result;
-
-
+        return $result;
     }
 
     /**
@@ -463,13 +461,15 @@ class NFeService
     public function assinarXml($xml)
     {
         try {
+            $certificate = Storage::get('certificado.pfx');
+            $tools = new Tools($this->configJson, Certificate::readPfx($certificate, '123456'));
+            if(isset($tools) && !empty($tools)) {
+                return $tools->signNFe((string) $xml);
+            } else {
+                return 'Erro ao assinar o XML';
+            }
 
-            $certificadoDigital = Storage::get('certificado.pfx');
-            $tools = new Tools($this->configJson, Certificate::readPfx($certificadoDigital, '123456'));
-
-            return $xmlAssinado = $tools->signNFe($xml); // O conteúdo do XML assinado fica armazenado na variável $xmlAssinado
-        } catch (\Exception $e) {
-            //aqui você trata possíveis exceptions da assinatura
+        } catch (Exception $e) {
             exit($e->getMessage());
         }
     }
@@ -481,12 +481,10 @@ class NFeService
     public function consultarStatus($recibo)
     {
         try {
-            $certificadoDigital = Storage::get('certificado.pfx');
-            $tools = new Tools($this->configJson, Certificate::readPfx($certificadoDigital, '123456'));
-            $protocolo = $tools->sefazConsultaRecibo($recibo);
-            return $protocolo;
+            $certificate = Storage::get('certificado.pfx');
+            $tools = new Tools($this->configJson, Certificate::readPfx($certificate, '123456'));
+            return $tools->sefazConsultaRecibo($recibo);
         } catch (Exception $e) {
-            //aqui você trata possíveis exceptions da consulta
             exit($e->getMessage());
         }
     }
@@ -498,13 +496,13 @@ class NFeService
     public function enviarLote($xmlAssinado)
     {
         try {
-            $certificadoDigital = Storage::get('certificado.pfx');
-            $tools = new Tools($this->configJson, Certificate::readPfx($certificadoDigital, '123456'));
             $idLote = str_pad(100, 15, '0', STR_PAD_LEFT); // Identificador do lote
-            $resp = $tools->sefazEnviaLote([$xmlAssinado], $idLote);
+            $certificate = Storage::get('certificado.pfx');
+            $tools = new Tools($this->configJson, Certificate::readPfx($certificate, '123456'));
+            $response = $tools->sefazEnviaLote([$xmlAssinado], $idLote);
 
             $st = new Standardize();
-            $std = $st->toStd($resp);
+            $std = $st->toStd($response);
             if ($std->cStat != 103) {
                 //erro registrar e voltar
                 exit("[$std->cStat] $std->xMotivo");
@@ -544,57 +542,52 @@ class NFeService
     public function salvarXML($xml, $chave)
     {
         try {
-            //Storage::put('xmlDfe-' + $chave, $xml);
-            //Storage::put('xmlDfe-' + $chave, $xml);
             Storage::disk('local')->put('arquivos_protocolados/xmlDfe-' . $chave . '.xml', (string) $xml);
-
         } catch( Exception $e) {
-            return "Erro: " . $e->getMessage();
+            exit($e->getMessage());
         }
     }
 
+    /**
+     * @return string
+     */
     public function cancelarNFe()
     {
         try {
-            $certificadoDigital = Storage::get('certificado.pfx');
-            $tools = new Tools($this->configJson, Certificate::readPfx($certificadoDigital, '123456'));
-            $tools->model('55');
+            $this->tools->model('55');
 
             $chave = '43210406103611000141550010000001731013821394';
             $xJust = 'Erro de digitação nos dados dos produtos';
             $nProt = '143210000197293';
-            $response = $tools->sefazCancela($chave, $xJust, $nProt);
+            $response = $this->tools->sefazCancela($chave, $xJust, $nProt);
 
-            //você pode padronizar os dados de retorno atraves da classe abaixo
-            //de forma a facilitar a extração dos dados do XML
-            //NOTA: mas lembre-se que esse XML muitas vezes será necessário,
-            //      quando houver a necessidade de protocolos
+            //padroniza os dados de retorno atraves da classe
             $stdCl = new Standardize($response);
-            //nesse caso $std irá conter uma representação em stdClass do XML
+
+            //em stdClass do XML
             $std = $stdCl->toStd();
-            //nesse caso o $arr irá conter uma representação em array do XML
+
+            //em array do XML
             $arr = $stdCl->toArray();
-            //nesse caso o $json irá conter uma representação em JSON do XML
+
+            //em JSON do XML
             $json = $stdCl->toJson();
 
-            //verifique se o evento foi processado
+            //verifique se houve falha
             if ($std->cStat != 128) {
-                //houve alguma falha e o evento não foi processado
-                //TRATAR
+
             } else {
                 $cStat = $std->retEvento->infEvento->cStat;
                 if ($cStat == '101' || $cStat == '135' || $cStat == '155') {
-                    //SUCESSO PROTOCOLAR A SOLICITAÇÂO ANTES DE GUARDAR
-                    $xml = Complements::toAuthorize($tools->lastRequest, $response);
-                    //grave o XML protocolado
+                    $xml = Complements::toAuthorize($this->tools->lastRequest, $response);
+
                     return $xml;
                 } else {
-                    //houve alguma falha no evento
-                    //TRATAR
+
                 }
             }
-        } catch (\Exception $e) {
-            echo $e->getMessage();
+        } catch (Exception $e) {
+            exit($e->getMessage());
         }
 
     }

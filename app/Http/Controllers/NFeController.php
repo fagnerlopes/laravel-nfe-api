@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Services\NFeService;
 use Illuminate\Http\Request;
-use NFePHP\NFe\Complements;
 
 class NFeController extends Controller
 {
@@ -56,12 +55,11 @@ class NFeController extends Controller
             ]
         ];
 
+
         $nfeService = new NFeService($config);
         $xml = $nfeService->gerarNFe();
 
         $xmlAssinado = $nfeService->assinarXml($xml['xml']);
-
-
 
         if(isset($xmlAssinado) && !empty($xmlAssinado)) {
             $recibo = $nfeService->enviarLote($xmlAssinado);
@@ -75,10 +73,12 @@ class NFeController extends Controller
             $xmlProtocolado = $nfeService->inserirProtocolo($xmlAssinado, $protocolo);
         }
 
-        echo $xml['chave_nfe'];
+
         if(isset($xmlProtocolado) && !empty($xmlProtocolado)) {
             $nfeService->salvarXML($xmlProtocolado, $xml['chave_nfe']);
         }
+
+        return $xmlProtocolado;
     }
 
     /**
