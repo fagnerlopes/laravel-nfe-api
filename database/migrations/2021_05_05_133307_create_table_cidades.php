@@ -21,6 +21,7 @@ class CreateTableCidades extends Migration
             $table->string('nome', 100);
             $table->string('codigo_ibge', 20);
             $table->timestamps();
+            $table->softDeletes();
 
             if (Schema::hasTable('estados')) {
                 $table->foreign('estado_id')->references('id')->on('estados');

@@ -37,6 +37,7 @@ class CreateTableEmitentes extends Migration
             $table->integer('regime_tributario');
             $table->double('aliquota_geral_simples', 3, 2);
             $table->timestamps();
+            $table->softDeletes();
 
 
             if (Schema::hasTable('cidades')) {

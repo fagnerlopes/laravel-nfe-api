@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use SoftDeletes;
 
 class Cidade extends Model
 {
@@ -19,6 +20,8 @@ class Cidade extends Model
         'nome',
         'codigo_ibge',
     ];
+
+    protected $dates = ['deleted_at'];
 
     public function estado(){
         return $this->belongsTo(Estado::class);

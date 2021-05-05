@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use SoftDeletes;
 
 class Emitente extends Model
 {
@@ -32,6 +33,8 @@ class Emitente extends Model
         'regime_tributario',
         'aliquota_geral_simples'
     ];
+
+    protected $dates = ['deleted_at'];
 
     public function cidade(){
         return $this->belongsTo(Cidade::class);

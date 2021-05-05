@@ -27,6 +27,7 @@ class CreateTableEventos extends Migration
             $table->text('mensagem_retorno');
             $table->text('justificativa');
             $table->timestamps();
+            $table->softDeletes();
 
             if (Schema::hasTable('documentos')) {
                 $table->foreign('documento_id')->references('id')->on('documentos');

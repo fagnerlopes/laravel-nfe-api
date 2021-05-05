@@ -24,6 +24,7 @@ class CreateTableEstados extends Migration
             $table->double('perc_aliq_icms',3,2);
             $table->double('perc_aliq_interestadual',3,2);
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

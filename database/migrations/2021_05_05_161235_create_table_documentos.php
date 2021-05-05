@@ -21,6 +21,7 @@ class CreateTableDocumentos extends Migration
             $table->integer('numero');
             $table->integer('serie');
             $table->timestamps();
+            $table->softDeletes();
 
             if (Schema::hasTable('emitentes')) {
                 $table->foreign('emitente_id')->references('id')->on('emitentes');

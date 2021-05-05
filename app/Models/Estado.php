@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use SoftDeletes;
 
 class Estado extends Model
 {
@@ -22,6 +23,8 @@ class Estado extends Model
         'perc_aliq_interna',
         'perc_aliq_interestadual'
     ];
+
+    protected $dates = ['deleted_at'];
 
     public function cidades(){
         return $this->hasMany(Cidade::class);
