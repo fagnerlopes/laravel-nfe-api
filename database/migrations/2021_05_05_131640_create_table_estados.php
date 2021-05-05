@@ -13,7 +13,9 @@ class CreateTableEstados extends Migration
      */
     public function up()
     {
-        Schema::create('estados', function (Blueprint $table) {
+        Schema::connection('mysql')->create('estados', function (Blueprint $table) {
+            $table->charset = 'utf8mb4';
+            $table->collation = 'utf8mb4_unicode_ci';
             $table->id();
             $table->string('nome', 100);
             $table->string('codigo_ibge', 10);

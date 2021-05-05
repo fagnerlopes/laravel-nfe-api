@@ -24,4 +24,8 @@ class Cidade extends Model
         return $this->belongsTo(Estado::class);
     }
 
+    public function emitentes(){
+        return $this->hasMany(Emitente::class);
+    }
+
 }

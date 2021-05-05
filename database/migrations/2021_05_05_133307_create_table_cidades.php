@@ -13,14 +13,18 @@ class CreateTableCidades extends Migration
      */
     public function up()
     {
-        Schema::create('cidades', function (Blueprint $table) {
+        Schema::connection('mysql')->create('cidades', function (Blueprint $table) {
+            $table->charset = 'utf8mb4';
+            $table->collation = 'utf8mb4_unicode_ci';
             $table->id();
             $table->unsignedBigInteger('estado_id');
             $table->string('nome', 100);
             $table->string('codigo_ibge', 20);
             $table->timestamps();
 
-            $table->foreign('estado_id')->references('id')->on('estados');
+            if (Schema::hasTable('estados')) {
+                $table->foreign('estado_id')->references('id')->on('estados');
+            }
         });
     }
 
