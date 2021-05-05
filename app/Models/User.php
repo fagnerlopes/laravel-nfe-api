@@ -43,4 +43,8 @@ class User extends Authenticatable
     ];
 
     protected $dates = ['deleted_at'];
+
+    public function emitente(){
+        return $this->belongsTo(Emitente::class);
+    }
 }

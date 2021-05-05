@@ -19,14 +19,14 @@ class CreateTableEmitentes extends Migration
             $table->string('razao_social', 180);
             $table->string('fantasia', 130);
             $table->string('cnpj', 20);
-            $table->string('token_ibpt');
-            $table->integer('codigo_csc_id');
-            $table->string('codigo_csc');
-            $table->string('inscricao_estadual', 20);
-            $table->string('inscricao_municipal', 20);
-            $table->text('conteudo_certificado');
-            $table->text('caminho_certificado');
-            $table->text('senha_certificado');
+            $table->string('token_ibpt')->nullable();
+            $table->integer('codigo_csc_id')->nullable();
+            $table->string('codigo_csc')->nullable();
+            $table->string('inscricao_estadual', 20)->nullable();
+            $table->string('inscricao_municipal', 20)->nullable();
+            $table->text('conteudo_certificado')->nullable();
+            $table->text('caminho_certificado')->nullable();
+            $table->text('senha_certificado')->nullable();
             $table->string('codigo_postal', 20 );
             $table->string('logradouro', 150);
             $table->string('numero', 20);
@@ -35,7 +35,7 @@ class CreateTableEmitentes extends Migration
             $table->string('fone', 15);
             $table->string('email', 150);
             $table->integer('regime_tributario');
-            $table->double('aliquota_geral_simples', 3, 2);
+            $table->double('aliquota_geral_simples', 3, 2)->nullable();
             $table->timestamps();
             $table->softDeletes();
 

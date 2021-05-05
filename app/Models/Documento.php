@@ -11,7 +11,11 @@ class Documento extends Model
     use HasFactory;
 
     protected $fillable = [
-        '',
+        'emitente_id',
+        'chave',
+        'status',
+        'numero',
+        'serie',
     ];
 
     protected $dates = ['deleted_at'];

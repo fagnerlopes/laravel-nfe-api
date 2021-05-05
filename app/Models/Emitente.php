@@ -43,4 +43,8 @@ class Emitente extends Model
     public function documentos(){
         return $this->hasMany(Documento::class);
     }
+
+    public function users(){
+        return $this->hasMany(User::class);
+    }
 }
