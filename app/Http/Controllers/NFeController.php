@@ -66,6 +66,7 @@ class NFeController extends Controller
         }
 
         if(isset($recibo) && !empty($recibo)) {
+            var_dump($recibo);
             $protocolo = $nfeService->consultarStatus($recibo);
         }
 

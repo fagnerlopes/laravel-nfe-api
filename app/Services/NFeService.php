@@ -78,7 +78,7 @@ class NFeService
         $stdIdeNfe->indPag = 0; //NÃO EXISTE MAIS NA VERSÃO 4.00
         $stdIdeNfe->mod = 55;
         $stdIdeNfe->serie = 1;
-        $stdIdeNfe->nNF = 175;
+        $stdIdeNfe->nNF = 180;
         $stdIdeNfe->dhEmi = self::getDateIso();
         $stdIdeNfe->dhSaiEnt = self::getDateIso();
         $stdIdeNfe->tpNF = 1;
@@ -512,7 +512,7 @@ class NFeService
             return $recibo;
         } catch (Exception $e) {
             //aqui você trata possiveis exceptions do envio
-            exit($e->getMessage());
+            return($e->getMessage());
         }
     }
 
@@ -544,7 +544,7 @@ class NFeService
         try {
             Storage::disk('local')->put('arquivos_protocolados/xmlDfe-' . $chave . '.xml', (string) $xml);
         } catch( Exception $e) {
-            exit($e->getMessage());
+            return($e->getMessage());
         }
     }
 
@@ -587,7 +587,7 @@ class NFeService
                 }
             }
         } catch (Exception $e) {
-            exit($e->getMessage());
+            return($e->getMessage());
         }
 
     }
