@@ -15,9 +15,12 @@ class Estado extends Model
      * @var array
      */
     protected $fillable = [
-        'name',
-        'email',
-        'password',
+        'nome',
+        'codigo_ibge',
+        'uf',
+        'regiao',
+        'perc_aliq_interna',
+        'perc_aliq_interestadual'
     ];
 
     public function cidades(){
