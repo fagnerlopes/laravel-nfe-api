@@ -35,7 +35,7 @@ class CreateTableEmitentes extends Migration
             $table->string('fone', 15);
             $table->string('email', 150);
             $table->integer('regime_tributario');
-            $table->double('aliquota_geral_simples', 3, 2)->nullable();
+            $table->double('aliquota_geral_simples', 5, 2)->nullable();
             $table->timestamps();
             $table->softDeletes();
 

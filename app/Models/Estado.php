@@ -20,8 +20,8 @@ class Estado extends Model
         'codigo_ibge',
         'uf',
         'regiao',
-        'perc_aliq_interna',
-        'perc_aliq_interestadual'
+        'perc_aliq_icms_interna',
+        'perc_aliq_icms_interestadual',
     ];
 
     protected $dates = ['deleted_at'];

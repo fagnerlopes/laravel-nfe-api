@@ -13,7 +13,7 @@ class EmitenteSeeder extends Seeder
      */
     public function run()
     {
-        Emitente::factory()->count(1)->forUser([ 'name' => 'Millennium', ])->create();
+        //Emitente::factory()->count(1)->forUser([ 'name' => 'Millennium', ])->create();
 
     }
 }

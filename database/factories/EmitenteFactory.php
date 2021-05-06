@@ -23,7 +23,7 @@ class EmitenteFactory extends Factory
     public function definition()
     {
         return [
-            //'cidade_id' => 1,
+            'cidade_id' => 1,
             'razao_social' => 'Millennium Sistemas de Gestao - API DF-e',
             'fantasia' => 'Millennium Sistemas de Gestao',
             'cnpj' => '06103611000141',

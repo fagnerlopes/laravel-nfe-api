@@ -14,6 +14,6 @@ class CidadeSeeder extends Seeder
      */
     public function run()
     {
-        Cidade::factory()->count(1)->forEstado([ 'uf' => 'RS', ])->create();
+        //Cidade::factory()->count(1)->forEstado([ 'uf' => 'RS', ])->create();
     }
 }
