@@ -18,7 +18,7 @@ class CreateTableEmitentes extends Migration
             $table->unsignedBigInteger ('cidade_id');
             $table->string('razao_social', 180);
             $table->string('fantasia', 130);
-            $table->string('cnpj', 20);
+            $table->string('cnpj', 20)->unique();
             $table->string('token_ibpt')->nullable();
             $table->integer('codigo_csc_id')->nullable();
             $table->string('codigo_csc')->nullable();

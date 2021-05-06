@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\NFeController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -15,16 +16,20 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/nfe', [NFeController::class, 'index']);
+Route::post('auth/register', [AuthController::class, 'register']);
 
-Route::middleware('auth:api')->get('/user', function (Request $request) {
-    return $request->user();
+Route::post('auth/login', [AuthController::class, 'login']);
+
+Route::group(['middleware' => ['auth:sanctum']], function () {
+    Route::get('/me', function(Request $request) {
+        return auth()->user();
+    });
+
+    Route::post('auth/logout', [AuthController::class, 'logout']);
+
+    Route::prefix('nfe')->group(function (){
+        Route::get('/', [ NFeController::class, 'index' ]);
+        Route::post('/nfe/cancelar', [UserController::class, 'index']);
+    });
+
 });
-
-
-
-//Route::post('/nfe/cancelar', [UserController::class, 'index']'App\Http\Controllers\NFeController@cancelarNFe');
-
-
-
-
