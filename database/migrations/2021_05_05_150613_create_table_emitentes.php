@@ -32,13 +32,13 @@ class CreateTableEmitentes extends Migration
             $table->string('numero', 20);
             $table->string('bairro', 100);
             $table->string('complemento', 50);
-            $table->string('fone', 15);
+            $table->string('telefone', 15);
             $table->string('email', 150);
             $table->integer('regime_tributario');
             $table->double('aliquota_geral_simples', 5, 2)->nullable();
+            $table->integer('ambiente_fiscal')->default(2);
             $table->timestamps();
             $table->softDeletes();
-
 
             if (Schema::hasTable('cidades')) {
                 $table->foreign('cidade_id')->references('id')->on('cidades');

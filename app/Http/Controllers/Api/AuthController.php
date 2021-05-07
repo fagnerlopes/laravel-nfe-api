@@ -12,11 +12,17 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Laravel\Sanctum\HasApiTokens;
 
 class AuthController extends Controller
 {
-    use ApiResponser;
+    use ApiResponser, HasApiTokens;
 
+    /**
+     * Realiza o registro de um usuário retornando o token de acesso para autenticação
+     * @param RegisterUserRequest $request
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function register(RegisterUserRequest $request)
     {
         try {
@@ -42,33 +48,44 @@ class AuthController extends Controller
             return $this->success([
                 'token' => $user->createToken('API Token')->plainTextToken
             ], 'Token gerado com sucesso.');
+
         } catch (\Exception $e) {
             return $this->error($e->getMessage(), 400);
         }
 
     }
 
+    /**
+     * @param UserLoginRequest $request
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function login(UserLoginRequest $request)
     {
         $payload = $request->all();
-
+        // loga e verifica se foi bem sucedida
         if (!Auth::attempt($payload))
         {
             return $this->error('ops!! O login falhou. Verifique o usuário e senha.', 401);
         }
 
+        auth()->user()->tokens()->delete();
+
+        /*
+        Implementar autenticação por nível de acesso [ MasterAdministrator, Administrator, User]
+        */
+
         return $this->success([
             'token' => auth()->user()->createToken('API Token')->plainTextToken
-        ]);
+        ], 'Login bem sucedido.');
     }
+
 
     public function logout()
     {
         auth()->user()->tokens()->delete();
 
-        return [
-            'message' => 'Token revogado'
-        ];
+        return $this->success([ ], 'Token revogado.');
+
     }
 }
 

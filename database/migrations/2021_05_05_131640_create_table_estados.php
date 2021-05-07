@@ -22,7 +22,6 @@ class CreateTableEstados extends Migration
             $table->char('uf', 2);
             $table->integer('regiao');
             $table->double('perc_aliq_icms_interna',5,2);
-            $table->double('perc_aliq_icms_interestadual',5,2);
             $table->timestamps();
             $table->softDeletes();
         });

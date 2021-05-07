@@ -24,10 +24,9 @@ class CreateUsersTable extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            if(Schema::hasTable('emitentes')){
-                $table->foreign('emitente_id')->references('id')->on('emitentes');
+            if(Schema::hasTable('users')){
+                $table->foreign('emitente_id')->references('id')->on('emitente');
             }
-
         });
     }
 

@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+
+
 Route::post('auth/register', [AuthController::class, 'register']);
 
 Route::post('auth/login', [AuthController::class, 'login']);
@@ -27,9 +29,9 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
 
     Route::post('auth/logout', [AuthController::class, 'logout']);
 
-    Route::prefix('nfe')->group(function (){
-        Route::get('/', [ NFeController::class, 'index' ]);
-        Route::post('/nfe/cancelar', [UserController::class, 'index']);
-    });
+    Route::get('/nfe/teste', [ NFeController::class, 'index' ]);
 
+    Route::post('/nfe', [ NFeController::class, 'store' ]);
 });
+
+

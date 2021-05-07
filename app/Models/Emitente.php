@@ -31,7 +31,8 @@ class Emitente extends Model
         'fone',
         'email',
         'regime_tributario',
-        'aliquota_geral_simples'
+        'aliquota_geral_simples',
+        'ambiente_fiscal',
     ];
 
     protected $dates = ['deleted_at'];
