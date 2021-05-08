@@ -5,6 +5,7 @@ namespace App\Services\dfe\nfe;
 use App\Services\dfe\DocumentosFiscaisAbstract;
 use Illuminate\Http\Request;
 use NFePHP\DA\NFe\Danfe;
+use stdClass;
 use Symfony\Component\Console\Input\Input;
 
 
@@ -13,8 +14,6 @@ class NFeService extends DocumentosFiscaisAbstract
     public function buildNFeXml(Request $request):string
     {
         try {
-
-            return json_encode($request->input('emitente.endereco.cep') ?? null);
 
             $stdInfNfe = new stdClass();
             $stdInfNfe->versao = '4.00'; //versão do layout (string)
@@ -81,7 +80,7 @@ class NFeService extends DocumentosFiscaisAbstract
             $this->nfe->tagenderEmit($stdEnderecoEmitente);
 
             $stdDestinatário = new stdClass();
-            $stdDestinatário->xNome = $request->input('destinatario.nome') ?? null;
+            $stdDestinatário->xNome = $request->input('destinatario.nome');
             $stdDestinatário->indIEDest = $request->input('destinatario.indicador_inscricao_estadual') ?? 2;
             $stdDestinatário->IE = $request->input('destinatario.inscricao_estadual') ?? null;
             $stdDestinatário->ISUF = $request->input('destinatario.inscricao_suframa') ?? null;
@@ -89,7 +88,7 @@ class NFeService extends DocumentosFiscaisAbstract
             $stdDestinatário->email = $request->input('destinatario.endereco.email') ?? null;
             $stdDestinatário->CNPJ = $request->input('destinatario.cnpj') ?? null;
             $stdDestinatário->CPF = $request->input('destinatario.cpf') ?? null;
-            $stdDestinatário->idEstrangeiro = null;
+            $stdDestinatário->idEstrangeiro = $request->input('destinatario.id_destinatario') ?? null;
 
             $this->nfe->tagdest($stdDestinatário);
 
@@ -108,194 +107,205 @@ class NFeService extends DocumentosFiscaisAbstract
 
             $this->nfe->tagenderDest($stdEnderecoDestinatario);
 
-            $stdAutorizadoXml = new stdClass();
-            $stdAutorizadoXml->CNPJ = null; //indicar um CNPJ ou CPF
-            $stdAutorizadoXml->CPF = '00132986078';
-
-            //$nfe->tagautXML($stdAutorizadoXml);
-
-            $stdProdutoItem = new stdClass();
-            $stdProdutoItem->item = 1; //item da NFe
-            $stdProdutoItem->cProd = 3114;
-            $stdProdutoItem->cEAN = "SEM GTIN";
-            $stdProdutoItem->cEANTrib = "SEM GTIN";
-            $stdProdutoItem->xProd = "FAGNER - MOTOR COMPRESSOR - MFS - RHF5 - 44,93 / 58mm - 6+6 Palhetas";
-            $stdProdutoItem->NCM = "84149039";
-            $stdProdutoItem->cBenef = null; //incluido no layout 4.00
-            $stdProdutoItem->EXTIPI = null;
-            $stdProdutoItem->CFOP = 5405;
-            $stdProdutoItem->uCom = "UN";
-            $stdProdutoItem->qCom = 3.00;
-            $stdProdutoItem->vUnCom = 69.00;
-            $stdProdutoItem->uTrib = "UN";
-            $stdProdutoItem->qTrib = 3.00;
-            $stdProdutoItem->vUnTrib = Util::formatNumberForXml(69.00);
-            $stdProdutoItem->vProd = (double)$stdProdutoItem->qTrib * $stdProdutoItem->vUnTrib;
-            $stdProdutoItem->vFrete = null;
-            $stdProdutoItem->vSeg = null;
-            $stdProdutoItem->vDesc = null;
-            $stdProdutoItem->vOutro = null;
-            $stdProdutoItem->indTot = 1;
-            $stdProdutoItem->xPed = null;
-            $stdProdutoItem->nItemPed = null;
-            $stdProdutoItem->nFCI = null;
-
-            $this->nfe->tagprod($stdProdutoItem);
 
 
-            $stdEspecificacaoST = new stdClass();
-            $stdEspecificacaoST->item = 1; //item da NFe
-            $stdEspecificacaoST->CEST = '0103500';
-            //$stdEspecificacaoST->indEscala = null; //incluido no layout 4.00
-            //$stdEspecificacaoST->CNPJFab = null; //incluido no layout 4.00
 
-            $this->nfe->tagCEST($stdEspecificacaoST);
+            foreach ($request->input('itens') as $item) {
 
-            $stdImpostoItem = new stdClass();
-            $stdImpostoItem->item = 1; //item da NFe
-            $stdImpostoItem->vTotTrib = 39.16;
+                $objItens = (object) $item;
 
-            $this->nfe->tagimposto($stdImpostoItem);
+                $stdProdutoItem = new stdClass();
+                $stdProdutoItem->item = $objItens->numero_item; //item da NFe
+                $stdProdutoItem->cProd = $objItens->codigo_produto;
+                $stdProdutoItem->cEAN = $objItens->numero_item ?? "SEM GTIN";
+                $stdProdutoItem->cEANTrib = $objItens->numero_item ?? "SEM GTIN";
+                $stdProdutoItem->xProd = $objItens->descricao;
+                $stdProdutoItem->NCM = $objItens->codigo_ncm;
+                $stdProdutoItem->cBenef = $objItens->codigo_beneficio_fiscal ?? null; //incluido no layout 4.00
+                $stdProdutoItem->EXTIPI = $objItens->codigo_ex_tipi ?? null;
+                $stdProdutoItem->CFOP = $objItens->cfop;
+                $stdProdutoItem->uCom = $objItens->unidade_comercial;
+                $stdProdutoItem->qCom = $objItens->quantidade_comercial;
+                $stdProdutoItem->vUnCom = $objItens->valor_unitario_comercial;
+                $stdProdutoItem->uTrib = $objItens->unidade_tributavel;
+                $stdProdutoItem->qTrib = $objItens->quantidade_tributavel;
+                $stdProdutoItem->vUnTrib = $objItens->valor_unitario_tributavel;
+                $stdProdutoItem->vProd = $objItens->valor_bruto;
+                $stdProdutoItem->vFrete = $objItens->valor_frete ?? null;
+                $stdProdutoItem->vSeg = $objItens->valor_seguro ?? null;
+                $stdProdutoItem->vDesc = $objItens->valor_desconto ?? null;
+                $stdProdutoItem->vOutro = $objItens->valor_outras_despesas ?? null;
+                $stdProdutoItem->indTot = $objItens->inclui_no_total;
+                $stdProdutoItem->xPed = $objItens->pedido_compra.numero ?? null;
+                $stdProdutoItem->nItemPed = $objItens->pedido_compra.item ?? null;
+                $stdProdutoItem->nFCI = $objItens->numero_fci ?? null;
 
-        if($this->emitente->regime_tributario !== 1) {
+                $this->nfe->tagprod($stdProdutoItem);
 
-            $stdICMSItem = new stdClass();
-            $stdICMSItem->item            = 1; //item da NFe
-            $stdICMSItem->orig            = 1;
-            $stdICMSItem->CST             = "";
-            $stdICMSItem->modBC           = "";
-            $stdICMSItem->vBC             = "";
-            $stdICMSItem->pICMS           = "";
-            $stdICMSItem->vICMS           = "";
-            $stdICMSItem->pFCP            = "";
-            $stdICMSItem->vFCP            = "";
-            $stdICMSItem->vBCFCP          = "";
-            $stdICMSItem->modBCST         = "";
-            $stdICMSItem->pMVAST          = "";
-            $stdICMSItem->pRedBCST        = "";
-            $stdICMSItem->vBCST           = "";
-            $stdICMSItem->pICMSST         = "";
-            $stdICMSItem->vICMSST         = "";
-            $stdICMSItem->vBCFCPST        = "";
-            $stdICMSItem->pFCPST          = "";
-            $stdICMSItem->vFCPST          = "";
-            $stdICMSItem->vICMSDeson      = "";
-            $stdICMSItem->motDesICMS      = "";
-            $stdICMSItem->pRedBC          = "";
-            $stdICMSItem->vICMSOp         = "";
-            $stdICMSItem->pDif            = "";
-            $stdICMSItem->vICMSDif        = "";
-            $stdICMSItem->vBCSTRet        = "";
-            $stdICMSItem->pST             = "";
-            $stdICMSItem->vICMSSTRet      = "";
-            $stdICMSItem->vBCFCPSTRet     = "";
-            $stdICMSItem->pFCPSTRet       = "";
-            $stdICMSItem->vFCPSTRet       = "";
-            $stdICMSItem->pRedBCEfet      = "";
-            $stdICMSItem->vBCEfet         = "";
-            $stdICMSItem->pICMSEfet       = "";
-            $stdICMSItem->vICMSEfet       = "";
-            $stdICMSItem->vICMSSubstituto = ""; //NT2018.005_1.10_Fevereiro de 2019
 
-             $nfe->tagICMS($stdICMSItem);
+                $stdEspecificacaoST = new stdClass();
+                $stdEspecificacaoST->item = $objItens->numero_item; //item da NFe
+                $stdEspecificacaoST->CEST = $objItens->cest ?? null;
+                $stdEspecificacaoST->indEscala = $objItens->escala_relevante ?? null; //incluido no layout 4.00
+                $stdEspecificacaoST->CNPJFab = $objItens->cnpj_fabricante ?? null; //incluido no layout 4.00
 
-        }
+                $this->nfe->tagCEST($stdEspecificacaoST);
 
-//        $stdICMSSTRet = new stdClass();
-//        $stdICMSSTRet->item = 1; //item da NFe
-//        $stdICMSSTRet->orig = 0;
-//        $stdICMSSTRet->CST = '60';
-//        $stdICMSSTRet->vBCSTRet = 2.49;
-//        $stdICMSSTRet->vICMSSTRet = 0.42;
-//        $stdICMSSTRet->vBCSTDest = null;
-//        $stdICMSSTRet->vICMSSTDest = null;
-//        $stdICMSSTRet->vBCFCPSTRet = null;
-//        $stdICMSSTRet->pFCPSTRet = null;
-//        $stdICMSSTRet->vFCPSTRet = null;
-//        $stdICMSSTRet->pST = null;
-//        $stdICMSSTRet->vICMSSubstituto = null;
-//        $stdICMSSTRet->pRedBCEfet = null;
-//        $stdICMSSTRet->vBCEfet = null;
-//        $stdICMSSTRet->pICMSEfet = null;
-//        $stdICMSSTRet->vICMSEfet = null;
-//
-//        $nfe->tagICMSST($stdICMSSTRet);
+                $objItensImposto = (object) $objItens->imposto;
 
-            if($this->emitente->regime_tributario === 1) {
+                $stdImpostoItem = new stdClass();
+                $stdImpostoItem->item = $objItens->numero_item; //item da NFe
+                $stdImpostoItem->vTotTrib = $objItensImposto->valor_aproximado_tributos;
 
-                $stdICMSSNItem = new stdClass();
-                $stdICMSSNItem->item = 1; //item da NFe
-                $stdICMSSNItem->orig = 1;
-                $stdICMSSNItem->CSOSN = '500';
-                $stdICMSSNItem->pCredSN = 2.00;
-                $stdICMSSNItem->vCredICMSSN = 20.00;
-                $stdICMSSNItem->modBCST = null;
-                $stdICMSSNItem->pMVAST = null;
-                $stdICMSSNItem->pRedBCST = null;
-                $stdICMSSNItem->vBCST = null;
-                $stdICMSSNItem->pICMSST = null;
-                $stdICMSSNItem->vICMSST = null;
-                $stdICMSSNItem->vBCFCPST = null; //incluso no layout 4.00
-                $stdICMSSNItem->pFCPST = null; //incluso no layout 4.00
-                $stdICMSSNItem->vFCPST = null; //incluso no layout 4.00
-                $stdICMSSNItem->vBCSTRet = null;
-                $stdICMSSNItem->pST = null;
-                $stdICMSSNItem->vICMSSTRet = null;
-                $stdICMSSNItem->vBCFCPSTRet = null; //incluso no layout 4.00
-                $stdICMSSNItem->pFCPSTRet = null; //incluso no layout 4.00
-                $stdICMSSNItem->vFCPSTRet = null; //incluso no layout 4.00
-                $stdICMSSNItem->modBC = null;
-                $stdICMSSNItem->vBC = null;
-                $stdICMSSNItem->pRedBC = null;
-                $stdICMSSNItem->pICMS = null;
-                $stdICMSSNItem->vICMS = null;
-                $stdICMSSNItem->pRedBCEfet = null;
-                $stdICMSSNItem->vBCEfet = null;
-                $stdICMSSNItem->pICMSEfet = null;
-                $stdICMSSNItem->vICMSEfet = null;
-                $stdICMSSNItem->vICMSSubstituto = null;
+                $this->nfe->tagimposto($stdImpostoItem);
 
-                $this->nfe->tagICMSSN($stdICMSSNItem);
+                $objItensImpostoIcms = (object) $objItensImposto->icms;
+
+
+
+                if ($this->emitente->regime_tributario !== 1) {
+
+                    $stdICMSItem = new stdClass();
+                    $stdICMSItem->item = $objItens->numero_item; //item da NFe
+                    $stdICMSItem->orig = $objItens->origem;
+                    $stdICMSItem->CST = $objItensImpostoIcms->situacao_tributaria;
+                    $stdICMSItem->modBC = $objItensImpostoIcms->modalidade_base_calculo;
+                    $stdICMSItem->vBC = $objItensImpostoIcms->valor_base_calculo ?? null;
+                    $stdICMSItem->pICMS = $objItensImpostoIcms->aliquota ?? '';
+                    $stdICMSItem->vICMS = $objItensImpostoIcms->valor ?? '';
+                    $stdICMSItem->pFCP = $objItensImpostoIcms->valor  ?? '';
+                    $stdICMSItem->vFCP = $objItensImpostoIcms->valor  ?? '';
+                    $stdICMSItem->vBCFCP = $objItensImpostoIcms->valor  ?? '';
+                    $stdICMSItem->modBCST = $objItensImpostoIcms->valor  ?? '';
+                    $stdICMSItem->pMVAST = $objItensImpostoIcms->valor  ?? '';
+                    $stdICMSItem->pRedBCST = $objItensImpostoIcms->valor  ?? '';
+                    $stdICMSItem->vBCST = $objItensImpostoIcms->valor ?? '';
+                    $stdICMSItem->pICMSST = $objItensImpostoIcms->valor ?? '';
+                    $stdICMSItem->vICMSST = $objItensImpostoIcms->valor ?? '';
+                    $stdICMSItem->vBCFCPST = $objItensImpostoIcms->valor ?? '';
+                    $stdICMSItem->pFCPST = $objItensImpostoIcms->valor ?? '';
+                    $stdICMSItem->vFCPST = $objItensImpostoIcms->valor ?? '';
+                    $stdICMSItem->vICMSDeson = $objItensImpostoIcms->valor ?? '';
+                    $stdICMSItem->motDesICMS = $objItensImpostoIcms->valor ?? '';
+                    $stdICMSItem->pRedBC = $objItensImpostoIcms->valor ?? '';
+                    $stdICMSItem->vICMSOp = $objItensImpostoIcms->valor ?? '';
+                    $stdICMSItem->pDif = $objItensImpostoIcms->valor ?? '';
+                    $stdICMSItem->vICMSDif = $objItensImpostoIcms->valor ?? '';
+
+                    $stdICMSItem->vBCSTRet = $objItensImpostoIcms->valor ?? '';
+                    $stdICMSItem->pST = $objItensImpostoIcms->aliquota_final  ?? '';
+                    $stdICMSItem->vICMSSTRet = $objItensImpostoIcms->valor ?? '';
+                    $stdICMSItem->vBCFCPSTRet = $objItensImpostoIcms->valor ?? '';
+                    $stdICMSItem->pFCPSTRet = $objItensImpostoIcms->valor ?? '';
+                    $stdICMSItem->vFCPSTRet = $objItensImpostoIcms->valor ?? '';
+                    $stdICMSItem->pRedBCEfet = $objItensImpostoIcms->valor ?? '';
+                    $stdICMSItem->vBCEfet = $objItensImpostoIcms->valor ?? '';
+                    $stdICMSItem->pICMSEfet = $objItensImpostoIcms->valor ?? '';
+                    $stdICMSItem->vICMSEfet = $objItensImpostoIcms->valor ?? '';
+                    $stdICMSItem->vICMSSubstituto = $objItensImpostoIcms->valor ?? ''; //NT2018.005_1.10_Fevereiro de 2019
+
+                    $this->nfe->tagICMS($stdICMSItem);
+
+
+
+                }
+
+                $stdICMSSTRet = new stdClass();
+                $stdICMSSTRet->item = 1; //item da NFe
+                $stdICMSSTRet->orig = 0;
+                $stdICMSSTRet->CST = '60';
+                $stdICMSSTRet->vBCSTRet = 2.49;
+                $stdICMSSTRet->vICMSSTRet = 0.42;
+                $stdICMSSTRet->vBCSTDest = null;
+                $stdICMSSTRet->vICMSSTDest = null;
+                $stdICMSSTRet->vBCFCPSTRet = null;
+                $stdICMSSTRet->pFCPSTRet = null;
+                $stdICMSSTRet->vFCPSTRet = null;
+                $stdICMSSTRet->pST = null;
+                $stdICMSSTRet->vICMSSubstituto = null;
+                $stdICMSSTRet->pRedBCEfet = null;
+                $stdICMSSTRet->vBCEfet = null;
+                $stdICMSSTRet->pICMSEfet = null;
+                $stdICMSSTRet->vICMSEfet = null;
+
+                $this->nfe->tagICMSST($stdICMSSTRet);
+
+
+                if ($this->emitente->regime_tributario === 1) {
+
+                    $stdICMSSNItem = new stdClass();
+                    $stdICMSSNItem->item = 1; //item da NFe
+                    $stdICMSSNItem->orig = 1;
+                    $stdICMSSNItem->CSOSN = '500';
+                    $stdICMSSNItem->pCredSN = 2.00;
+                    $stdICMSSNItem->vCredICMSSN = 20.00;
+                    $stdICMSSNItem->modBCST = null;
+                    $stdICMSSNItem->pMVAST = null;
+                    $stdICMSSNItem->pRedBCST = null;
+                    $stdICMSSNItem->vBCST = null;
+                    $stdICMSSNItem->pICMSST = null;
+                    $stdICMSSNItem->vICMSST = null;
+                    $stdICMSSNItem->vBCFCPST = null; //incluso no layout 4.00
+                    $stdICMSSNItem->pFCPST = null; //incluso no layout 4.00
+                    $stdICMSSNItem->vFCPST = null; //incluso no layout 4.00
+                    $stdICMSSNItem->vBCSTRet = null;
+                    $stdICMSSNItem->pST = null;
+                    $stdICMSSNItem->vICMSSTRet = null;
+                    $stdICMSSNItem->vBCFCPSTRet = null; //incluso no layout 4.00
+                    $stdICMSSNItem->pFCPSTRet = null; //incluso no layout 4.00
+                    $stdICMSSNItem->vFCPSTRet = null; //incluso no layout 4.00
+                    $stdICMSSNItem->modBC = null;
+                    $stdICMSSNItem->vBC = null;
+                    $stdICMSSNItem->pRedBC = null;
+                    $stdICMSSNItem->pICMS = null;
+                    $stdICMSSNItem->vICMS = null;
+                    $stdICMSSNItem->pRedBCEfet = null;
+                    $stdICMSSNItem->vBCEfet = null;
+                    $stdICMSSNItem->pICMSEfet = null;
+                    $stdICMSSNItem->vICMSEfet = null;
+                    $stdICMSSNItem->vICMSSubstituto = null;
+
+                    $this->nfe->tagICMSSN($stdICMSSNItem);
+                }
+
+                $stdIPIItem = new stdClass();
+                $stdIPIItem->item = 1; //item da NFe
+                $stdIPIItem->clEnq = null;
+                $stdIPIItem->CNPJProd = null;
+                $stdIPIItem->cSelo = null;
+                $stdIPIItem->qSelo = null;
+                $stdIPIItem->cEnq = '999';
+                $stdIPIItem->CST = '99';
+                $stdIPIItem->vIPI = 0.00;
+                $stdIPIItem->vBC = 0.00;
+                $stdIPIItem->pIPI = 0.00;
+                $stdIPIItem->qUnid = null;
+                $stdIPIItem->vUnid = null;
+
+                $this->nfe->tagIPI($stdIPIItem);
+
+                $stdPISItem = new stdClass();
+                $stdPISItem->item = 1; //item da NFe
+                $stdPISItem->CST = '04';
+                $stdPISItem->vBC = null;
+                $stdPISItem->pPIS = null;
+                $stdPISItem->vPIS = null;
+                $stdPISItem->qBCProd = null;
+                $stdPISItem->vAliqProd = null;
+
+                $this->nfe->tagPIS($stdPISItem);
+
+                $stdCOFINSItem = new stdClass();
+                $stdCOFINSItem->item = 1; //item da NFe
+                $stdCOFINSItem->CST = '04';
+                $stdCOFINSItem->vBC = null;
+                $stdCOFINSItem->pCOFINS = null;
+                $stdCOFINSItem->vCOFINS = null;
+                $stdCOFINSItem->qBCProd = null;
+                $stdCOFINSItem->vAliqProd = null;
+
+                $this->nfe->tagCOFINS($stdCOFINSItem);
             }
-
-
-            $stdIPIItem = new stdClass();
-            $stdIPIItem->item = 1; //item da NFe
-            $stdIPIItem->clEnq = null;
-            $stdIPIItem->CNPJProd = null;
-            $stdIPIItem->cSelo = null;
-            $stdIPIItem->qSelo = null;
-            $stdIPIItem->cEnq = '999';
-            $stdIPIItem->CST = '99';
-            $stdIPIItem->vIPI = 0.00;
-            $stdIPIItem->vBC = 0.00;
-            $stdIPIItem->pIPI = 0.00;
-            $stdIPIItem->qUnid = null;
-            $stdIPIItem->vUnid = null;
-
-            $this->nfe->tagIPI($stdIPIItem);
-
-            $stdPISItem = new stdClass();
-            $stdPISItem->item = 1; //item da NFe
-            $stdPISItem->CST = '04';
-            $stdPISItem->vBC = null;
-            $stdPISItem->pPIS = null;
-            $stdPISItem->vPIS = null;
-            $stdPISItem->qBCProd = null;
-            $stdPISItem->vAliqProd = null;
-
-            $this->nfe->tagPIS($stdPISItem);
-
-            $stdCOFINSItem = new stdClass();
-            $stdCOFINSItem->item = 1; //item da NFe
-            $stdCOFINSItem->CST = '04';
-            $stdCOFINSItem->vBC = null;
-            $stdCOFINSItem->pCOFINS = null;
-            $stdCOFINSItem->vCOFINS = null;
-            $stdCOFINSItem->qBCProd = null;
-            $stdCOFINSItem->vAliqProd = null;
-
-            $this->nfe->tagCOFINS($stdCOFINSItem);
 
             // se não for passado a lib irá calcular com base nos itens
             $stdTotaisICMSItem = new stdClass();
@@ -327,30 +337,32 @@ class NFeService extends DocumentosFiscaisAbstract
 
             $this->nfe->tagtransp($stdFrete);
 
-//        $stdTransportadora = new stdClass();
-//        $stdTransportadora->xNome = 'Rodo Fulano';
-//        $stdTransportadora->IE = '12345678901';
-//        $stdTransportadora->xEnder = 'Rua Um, sem numero';
-//        $stdTransportadora->xMun = 'Cotia';
-//        $stdTransportadora->UF = 'SP';
-//        $stdTransportadora->CNPJ = '12345678901234';//só pode haver um ou CNPJ ou CPF, se um deles é especificado o outro deverá ser null
-//        $stdTransportadora->CPF = null;
-//
-//        $nfe->tagtransporta($stdTransportadora);
 
-//        $stdVeiculoTrator = new stdClass();
-//        $stdVeiculoTrator->placa = 'ABC1111';
-//        $stdVeiculoTrator->UF = 'RJ';
-//        $stdVeiculoTrator->RNTC = '999999';
-//
-//        $nfe->tagveicTransp($stdVeiculoTrator);
-//
-//        $stdReboque = new stdClass();
-//        $stdReboque->placa = 'BCB0897';
-//        $stdReboque->UF = 'SP';
-//        $stdReboque->RNTC = '123456';
-//
-//        $nfe->tagreboque($stdReboque);
+
+            $stdTransportadora = new stdClass();
+            $stdTransportadora->xNome = 'Rodo Fulano';
+            $stdTransportadora->IE = '12345678901';
+            $stdTransportadora->xEnder = 'Rua Um, sem numero';
+            $stdTransportadora->xMun = 'Cotia';
+            $stdTransportadora->UF = 'SP';
+            $stdTransportadora->CNPJ = '12345678901234';//só pode haver um ou CNPJ ou CPF, se um deles é especificado o outro deverá ser null
+            $stdTransportadora->CPF = null;
+
+            $this->nfe->tagtransporta($stdTransportadora);
+
+            $stdVeiculoTrator = new stdClass();
+            $stdVeiculoTrator->placa = 'ABC1111';
+            $stdVeiculoTrator->UF = 'RJ';
+            $stdVeiculoTrator->RNTC = '999999';
+
+            $this->nfe->tagveicTransp($stdVeiculoTrator);
+
+            $stdReboque = new stdClass();
+            $stdReboque->placa = 'BCB0897';
+            $stdReboque->UF = 'SP';
+            $stdReboque->RNTC = '123456';
+
+            $this->nfe->tagreboque($stdReboque);
 
             $stdVolumes = new stdClass();
             $stdVolumes->item = 1; //indicativo do numero do volume
@@ -371,12 +383,12 @@ class NFeService extends DocumentosFiscaisAbstract
 
             $this->nfe->tagfat($stdFaturaCobranca);
 
-//        $stdDuplicata = new stdClass();
-//        $stdDuplicata->nDup = '1233';
-//        //$stdDuplicata->dVenc = '2017-08-22';
-//        $stdDuplicata->vDup = 207.00;
-//
-//        $nfe->tagdup($stdDuplicata);
+            $stdDuplicata = new stdClass();
+            $stdDuplicata->nDup = '1233';
+            $stdDuplicata->dVenc = '2017-08-22';
+            $stdDuplicata->vDup = 207.00;
+
+            $this->nfe->tagdup($stdDuplicata);
 
             $stdPagamento = new StdClass();
             $stdPagamento->vTroco = 0.00;
@@ -399,6 +411,12 @@ class NFeService extends DocumentosFiscaisAbstract
             $stdInfoAdic->infCpl = 'DOCUMENTO EMITIDO POR ME OU EPP OPTANTE PELO SIMPLES NACIONAL E NAO GERA DIREITO A CREDITO DE ICMS, IPI OU ISS.|Valor Total Aprox. dos Tributos R$ 39,16 ( 18,92%)';
 
             $this->nfe->taginfAdic($stdInfoAdic);
+
+            $stdAutorizadoXml = new stdClass();
+            $stdAutorizadoXml->CNPJ = $request->input('pessoas_autorizadas.cnpj') ?? null; //indicar um CNPJ ou CPF
+            $stdAutorizadoXml->CPF = $request->input('pessoas_autorizadas.cpf') ?? null;
+
+            $this->nfe->tagautXML($stdAutorizadoXml);
 
             $xml = $this->nfe->montaNFe();
 

@@ -1,0 +1,124 @@
+{
+    "natureza_operacao": "Venda de Mercadoria TESTE DF-E API",
+    "serie": "1",
+    "numero": "186",
+    "data_emissao": "2021-05-07T10:30:00-03:00",
+    "data_entrada_saida": "2021-05-07T10:30:00-03:00",
+    "tipo_operacao": "1",
+    "local_destino": "1",
+    "finalidade_emissao": "1",
+    "consumidor_final": "0",
+    "presenca_comprador": "1",
+    "notas_referenciadas": [],
+    "destinatario": {
+        "cpf": null,
+        "cnpj": "04446528000140",
+        "nome": "NF-E EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL",
+        "indicador_inscricao_estadual": "9",
+        "inscricao_estadual": null,
+        "endereco": {
+            "logradouro": "AVENIDA RIO BRANCO",
+            "numero": "1512",
+            "bairro": "RIO BRANCO",
+            "codigo_municipio": "4305108",
+            "nome_municipio": "Caxias do Sul",
+            "uf": "RS",
+            "cep": "95096000",
+            "codigo_pais": "1058",
+            "nome_pais": "BRASIL",
+            "telefone": "5430252422"
+        }
+    },
+    "itens": [
+        {
+            "numero_item": "1",
+            "codigo_produto": 3114,
+            "descricao": "MOTOR COMPRESSOR - MFS - RHF5 - 44,93 / 58mm - 6+6 Palhetas",
+            "codigo_ncm": "55110011",
+            "cfop": 5405,
+            "unidade_comercial": "UN",
+            "quantidade_comercial": 3,
+            "valor_unitario_comercial": 69,
+            "valor_bruto": 207.00,
+            "unidade_tributavel": "UN",
+            "quantidade_tributavel": 3,
+            "valor_unitario_tributavel": 69,
+            "origem": "0",
+            "inclui_no_total": "1",
+            "cest":"0103500",
+            "imposto": {
+                "valor_aproximado_tributos": 9.43,
+                "icms": {
+                    "situacao_tributaria": "500",
+                    "modalidade_base_calculo": "3",
+                    "valor_base_calculo": null,
+                    "modalidade_base_calculo_st": "4",
+                    "aliquota_reducao_base_calculo": null,
+                    "aliquota": null,
+                    "aliquota_final": null,
+                    "valor": null,
+                    "aliquota_margem_valor_adicionado_st": null,
+                    "aliquota_reducao_base_calculo_st": null,
+                    "valor_base_calculo_st": null,
+                    "aliquota_st": null,
+                    "valor_st": null
+                },
+                "pis": {
+                    "situacao_tributaria": "04",
+                    "valor_base_calculo": null,
+                    "aliquota": null,
+                    "valor": null
+                },
+                "cofins": {
+                    "situacao_tributaria": "04",
+                    "valor_base_calculo": null,
+                    "aliquota": null,
+                    "valor": null
+                }
+            },
+            "valor_desconto": 0,
+            "valor_frete": 0,
+            "valor_seguro": 0,
+            "valor_outras_despesas": 0,
+            "informacoes_adicionais_item": "Valor aproximado tributos R$: 9,43 (4,20%) Fonte: IBPT"
+        }
+    ],
+    "frete": {
+        "modalidade_frete": "0",
+        "volumes": [
+            {
+                "quantidade": "3",
+                "especie": null,
+                "marca": "TESTE",
+                "numero": null,
+                "peso_liquido": 500,
+                "peso_bruto": 500
+            }
+        ]
+    },
+    "cobranca": {
+        "fatura": {
+            "numero": "1233",
+            "valor_original": 207.00,
+            "valor_desconto": 0.00,
+            "valor_liquido": 207.00
+        }
+    },
+    "pagamento": {
+        "formas_pagamento": [
+            {
+                "meio_pagamento": "01",
+                "valor": 207.00,
+                "tipo_integracao": "2"
+            }
+        ]
+    },
+    "informacoes_adicionais_contribuinte": "PV: 3325 * Rep: DIRETO * Motorista:  * Forma Pagto: 04 DIAS * teste de observação para a nota fiscal * Valor aproximado tributos R$9,43 (4,20%) Fonte: IBPT",
+    "pessoas_autorizadas": [
+        {
+            "cnpj": "96256273000170"
+        }, {
+            "cnpj": "80681257000195"
+        }
+    ]
+}
