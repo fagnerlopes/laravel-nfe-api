@@ -28,7 +28,7 @@ class Emitente extends Model
         'numero',
         'bairro',
         'complemento',
-        'fone',
+        'telefone',
         'email',
         'regime_tributario',
         'aliquota_geral_simples',
