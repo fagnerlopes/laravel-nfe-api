@@ -107,18 +107,17 @@ class NFeService extends DocumentosFiscaisAbstract
 
             $this->nfe->tagenderDest($stdEnderecoDestinatario);
 
-
-
-
             foreach ($request->input('itens') as $item) {
 
                 $objItens = (object) $item;
 
+
+
                 $stdProdutoItem = new stdClass();
                 $stdProdutoItem->item = $objItens->numero_item; //item da NFe
                 $stdProdutoItem->cProd = $objItens->codigo_produto;
-                $stdProdutoItem->cEAN = $objItens->numero_item ?? "SEM GTIN";
-                $stdProdutoItem->cEANTrib = $objItens->numero_item ?? "SEM GTIN";
+                $stdProdutoItem->cEAN = $objItens->codigo_barras_comercial ?? "SEM GTIN";
+                $stdProdutoItem->cEANTrib = $objItens->codigo_barras_tributavel ?? "SEM GTIN";
                 $stdProdutoItem->xProd = $objItens->descricao;
                 $stdProdutoItem->NCM = $objItens->codigo_ncm;
                 $stdProdutoItem->cBenef = $objItens->codigo_beneficio_fiscal ?? null; //incluido no layout 4.00
@@ -136,11 +135,19 @@ class NFeService extends DocumentosFiscaisAbstract
                 $stdProdutoItem->vDesc = $objItens->valor_desconto ?? null;
                 $stdProdutoItem->vOutro = $objItens->valor_outras_despesas ?? null;
                 $stdProdutoItem->indTot = $objItens->inclui_no_total;
-                $stdProdutoItem->xPed = $objItens->pedido_compra.numero ?? null;
-                $stdProdutoItem->nItemPed = $objItens->pedido_compra.item ?? null;
+
+                if($objItens->pedido_compra) {
+                    $objItensPedidoCompra = (object) $objItens->pedido_compra;
+                    $stdProdutoItem->xPed = $objItensPedidoCompra->numero ?? null;
+                    $stdProdutoItem->nItemPed = $objItensPedidoCompra->item ?? null;
+                }
+
                 $stdProdutoItem->nFCI = $objItens->numero_fci ?? null;
 
                 $this->nfe->tagprod($stdProdutoItem);
+
+
+                return json_encode($stdProdutoItem);
 
 
                 $stdEspecificacaoST = new stdClass();
@@ -160,8 +167,6 @@ class NFeService extends DocumentosFiscaisAbstract
                 $this->nfe->tagimposto($stdImpostoItem);
 
                 $objItensImpostoIcms = (object) $objItensImposto->icms;
-
-
 
                 if ($this->emitente->regime_tributario !== 1) {
 
@@ -205,8 +210,6 @@ class NFeService extends DocumentosFiscaisAbstract
                     $stdICMSItem->vICMSSubstituto = $objItensImpostoIcms->valor ?? ''; //NT2018.005_1.10_Fevereiro de 2019
 
                     $this->nfe->tagICMS($stdICMSItem);
-
-
 
                 }
 
