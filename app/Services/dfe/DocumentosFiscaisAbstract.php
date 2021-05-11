@@ -39,11 +39,7 @@ abstract class DocumentosFiscaisAbstract implements DocumentosFiscaisInterface
         try {
 
             if(!($modelo === '55') && !($modelo === '65')) {
-                throw new Exception('Somente os modelos 55 e 65 são permitidos');
-            }
-
-            if(is_null($emitente)) {
-
+                throw new Exception('Somente os modelos 55 e 65 são permitidos', 9001);
             }
 
             $this->emitente = $emitente;
@@ -75,41 +71,52 @@ abstract class DocumentosFiscaisAbstract implements DocumentosFiscaisInterface
             $this->tools = new Tools($this->configJson, Certificate::readPfx(base64_decode($this->emitente->conteudo_certificado), decrypt($this->emitente->senha_certificado)));
             $this->nfe = new Make();
 
+            return [
+                'sucesso' => true,
+                'codigo' => 1001,
+                'mensagem' => 'Processamento Ok'
+            ];
+
         } catch (Exception $e) {
-            echo $e->getMessage();
+            return [
+                'sucesso' => false,
+                'codigo' => $e->getCode(),
+                'mensagem' => $e->getMessage()
+            ];
         }
     }
 
-    /**
-     * @param array $param
-     * @return string
-     */
-    abstract public function buildNFeXml(Request $request):string;
 
-    /**
-     * @param string $xml
-     * @return string
-     */
-    public function assignXml(string $xml):string
+    abstract public function buildNFeXml(Request $request);
+
+
+    public function assignXml(string $xml)
     {
         try {
             if(!isset($this->tools) && empty($this->tools)) {
-                throw new Exception('Erro ao assinar o xml');
+                throw new Exception('Erro ao assinar o xml', 9002);
             }
 
-            return $this->tools->signNFe((string) $xml);
+            return [
+                'sucesso' => true,
+                'codigo' => 1000,
+                'mensagem' => 'XML assinado com sucesso',
+                'data' => $this->tools->signNFe((string) $xml)
+            ];
+
 
         } catch (Exception $e) {
-            return $e->getMessage();
+            return [
+                'sucesso' => false,
+                'codigo' => $e->getCode(),
+                'mensagem' => $e->getMessage(),
+                'data' => null
+            ];
         }
     }
 
-    /**
-     * @param string $signedXml
-     * @return string
-     * Encapsula o XML assinado em um arquivo de lote
-     */
-    public function sendBatch(string $signedXml):string
+
+    public function sendBatch(string $signedXml)
     {
         try {
             $idBatch = str_pad('100', 15, '0', STR_PAD_LEFT);
@@ -120,60 +127,80 @@ abstract class DocumentosFiscaisAbstract implements DocumentosFiscaisInterface
             $std = $st->toStd($response);
 
             if ($std->cStat != 103) {
-                throw new Exception("[$std->cStat] $std->xMotivo");
+                throw new Exception($std->xMotivo, $std->cStat);
             }
 
-            return $std->infRec->nRec;
+            return [
+                'sucesso' => true,
+                'codigo' => $std->cStat,
+                'mensagem' => $std->xMotivo,
+                'data' => $std->infRec->nRec,
+            ];
 
         } catch (Exception $e) {
-            //aqui você trata possiveis exceptions do envio
-            return($e->getMessage());
+            return [
+                'sucesso' => false,
+                'codigo' => $e->getCode(),
+                'motivo' => $e->getMessage(),
+                'data' => null,
+            ];
         }
     }
 
-    /**
-     * @param string $receipt
-     * @return string
-     * Consulta a situação do documento fiscal na SEFAZ através do recibo
-     * retornado pelo método sendBatch()  [envio do lote]
-     */
-    public function getStatus(string $receipt):string
+
+    public function getStatus(string $receipt)
     {
         try {
-            return $this->tools->sefazConsultaRecibo($receipt);
+
+            $xmlProtocolo = $this->tools->sefazConsultaRecibo($receipt);
+
+            return [
+                'sucesso' => true,
+                'codigo' => 1000,
+                'mensagem' => 'Protocolo recebido com sucesso',
+                'data' =>  $xmlProtocolo,
+            ];
+
         } catch (Exception $e) {
-            return($e->getMessage());
+            return [
+                'sucesso' => false,
+                'codigo' => $e->getCode(),
+                'motivo' => $e->getMessage(),
+                'data' => null,
+            ];
         }
     }
 
-    /**
-     * @param string $signedXml
-     * @param string $protocol
-     * @return string
-     * Recebe o XML assinado e o XML do retorno da consulta de status,
-     * retornando um XML com o dados da autorização pela SEFAZ
-     */
-    public function addProtocolIntoXml(string $signedXml, string $protocol):string
+
+    public function addProtocolIntoXml(string $signedXml, string $protocol)
     {
         try {
             $request = $signedXml;
             $response = $protocol;
 
-            //header('Content-type: text/xml; charset=UTF-8');
-            return Complements::toAuthorize($request, $response);
+
+            $xmlAuthorized = Complements::toAuthorize($request, $response);
+
+            return [
+                'sucesso' => true,
+                'codigo' => 1000,
+                'mensagem' => 'Protocolo recebido com sucesso',
+                'data' =>  $xmlAuthorized,
+            ];
 
         } catch (Exception $e) {
-            return $e->getMessage();
+            return [
+                'sucesso' => false,
+                'codigo' => $e->getCode(),
+                'motivo' => $e->getMessage(),
+                'data' => null,
+            ];
         }
     }
 
 
-    /**
-     * @param array $nfe
-     * Array contendo as chaves chave, justificativa e protocolo
-     * @return mixed
-     */
-    public function cancelNFe(array $nfe):string
+
+    public function cancelNFe(array $nfe)
     {
         try {
             $this->tools->model('55');
@@ -185,8 +212,6 @@ abstract class DocumentosFiscaisAbstract implements DocumentosFiscaisInterface
 
             //padroniza os dados de retorno atraves da classe
             $stdCl = new Standardize($response);
-
-            //em stdClass do XML
             $std = $stdCl->toStd();
 
             //em array do XML
@@ -197,66 +222,79 @@ abstract class DocumentosFiscaisAbstract implements DocumentosFiscaisInterface
 
             //verifique se houve falha
             if ($std->cStat != 128) {
+                throw new Exception($std->xMotivo, (int) $std->cStat);
 
             } else {
                 $cStat = $std->retEvento->infEvento->cStat;
                 if ($cStat == '101' || $cStat == '135' || $cStat == '155') {
                     $xml = Complements::toAuthorize($this->tools->lastRequest, $response);
 
-                    return $xml;
-                } else {
-
+                    return [
+                        'sucesso' => true,
+                        'codigo' => 1000,
+                        'mensagem' => 'Protocolo recebido com sucesso',
+                        'data' =>  $xml,
+                    ];
                 }
             }
         } catch (Exception $e) {
-            return($e->getMessage());
+            return [
+                'sucesso' => false,
+                'codigo' => $e->getCode(),
+                'motivo' => $e->getMessage(),
+                'data' => null,
+            ];
         }
 
     }
 
-    /**
-     * @param array $param
-     * @return string
-     * Método que executa todos os métodos para autorização do documento fiscal
-     */
-    public function sendAndAuthorizeNfe(array $param): string
+
+    public function sendAndAuthorizeNfe(Request $request)
     {
 
-        $xml = $this->buildNFeXml($param);
+        $resultXml = $this->buildNFeXml($request);
 
-        $signedXml = $this->assignXml($xml);
-
-        var_dump($this->getErrors());
-
-        if (isset($signedXml) && !empty($signedXml)) {
-            $receipt = $this->sendBatch($signedXml);
+        if($resultXml['sucesso']){
+            $resultXmlSigned = $this->assignXml($resultXml['data']);
+        } else {
+            return $resultXml;
         }
 
-        if (isset($receipt) && !empty($receipt)) {
-            $protocol = $this->getStatus($receipt);
+        if ($resultXmlSigned['sucesso']) {
+            $signedXml = $resultXmlSigned['data'];
+            $resultSendBatch = $this->sendBatch($signedXml);
+        } else {
+            return $resultXmlSigned;
         }
 
-        if (isset($protocol) && !empty($protocol)) {
-            $authorizedXml = $this->addProtocolIntoXml($signedXml, $protocol);
+        if ($resultSendBatch['sucesso']) {
+            $resultStatus = $this->getStatus($resultSendBatch['data']);
+        } else {
+            return $resultSendBatch;
         }
 
-        return $authorizedXml;
+        if ($resultStatus['sucesso']) {
+            $authorizedXml = $this->addProtocolIntoXml($signedXml, $resultStatus['data']);
+        } else {
+            return $resultStatus;
+        }
+
+        return [
+            'sucesso' => true,
+            'codigo' => 1000,
+            'mensagem' => 'Solicitação processada com sucesso',
+            'data' =>  $authorizedXml,
+        ];
 
     }
 
-    /**
-     * @return array
-     * Retorna, se houver, erros de validação no XML
-     */
+
     public function getErrors()
     {
         return $this->nfe->getErrors();
     }
 
-    /**
-     * @return string
-     * Retorna a chave do documento fiscal composto de 44 caracteres
-     */
+
     public function getChave()
     {
         return $this->nfe->getChave();

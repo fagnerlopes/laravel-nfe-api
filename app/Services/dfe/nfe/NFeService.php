@@ -12,7 +12,7 @@ use Symfony\Component\Console\Input\Input;
 
 class NFeService extends DocumentosFiscaisAbstract
 {
-    public function buildNFeXml(Request $request):string
+    public function buildNFeXml(Request $request)
     {
         try {
 
@@ -104,191 +104,194 @@ class NFeService extends DocumentosFiscaisAbstract
             $stdEnderecoDestinatario->fone = $request->input('destinatario.endereco.telefone');
             $this->nfe->tagenderDest($stdEnderecoDestinatario);
 
-
-            foreach ($request->input('itens') as $key => $item) {
-
-                $stdProdutoItem = new stdClass();
-                $stdProdutoItem->item = $request->input("itens.{$key}.numero_item"); //item da NFe
-                $stdProdutoItem->cProd = $request->input("itens.{$key}.codigo_produto");
-                $stdProdutoItem->cEAN = $request->input("itens.{$key}.codigo_barras_comercial") ?? "SEM GTIN";
-                $stdProdutoItem->cEANTrib = $request->input("itens.{$key}.codigo_barras_tributavel") ?? "SEM GTIN";
-                $stdProdutoItem->xProd = $request->input("itens.{$key}.descricao");
-                $stdProdutoItem->NCM = $request->input("itens.{$key}.codigo_ncm");
-                $stdProdutoItem->cBenef = $request->input("itens.{$key}.codigo_beneficio_fiscal") ?? null; //incluido no layout 4.00
-                $stdProdutoItem->EXTIPI = $request->input("itens.{$key}.codigo_ex_tipi") ?? null;
-                $stdProdutoItem->CFOP = $request->input("itens.{$key}.cfop");
-                $stdProdutoItem->uCom = $request->input("itens.{$key}.unidade_comercial");
-                $stdProdutoItem->qCom = $request->input("itens.{$key}.quantidade_comercial");
-                $stdProdutoItem->vUnCom = $request->input("itens.{$key}.valor_unitario_comercial");
-                $stdProdutoItem->uTrib = $request->input("itens.{$key}.unidade_tributavel");
-                $stdProdutoItem->qTrib = $request->input("itens.{$key}.quantidade_tributavel");
-                $stdProdutoItem->vUnTrib = $request->input("itens.{$key}.valor_unitario_tributavel");
-                $stdProdutoItem->vProd = $request->input("itens.{$key}.valor_bruto");
-                $stdProdutoItem->vFrete = $request->input("itens.{$key}.valor_frete") ?? null;
-                $stdProdutoItem->vSeg = $request->input("itens.{$key}.valor_seguro") ?? null;
-                $stdProdutoItem->vDesc = $request->input("itens.{$key}.valor_desconto") ?? null;
-                $stdProdutoItem->vOutro = $request->input("itens.{$key}.valor_outras_despesas") ?? null;
-                $stdProdutoItem->indTot = $request->input("itens.{$key}.inclui_no_total");
-                $stdProdutoItem->xPed = $request->input("itens.{$key}.pedido_compra.numero") ?? null;
-                $stdProdutoItem->nItemPed = $request->input("itens.{$key}.pedido_compra..item") ?? null;
-                $stdProdutoItem->nFCI = $request->input("itens.{$key}.numero_fci") ?? null;
-                $this->nfe->tagprod($stdProdutoItem);
-
-                $stdEspecificacaoST = new stdClass();
-                $stdEspecificacaoST->item = $request->input("itens.{$key}.numero_item"); //item da NFe
-                $stdEspecificacaoST->CEST = $request->input("itens.{$key}.cest") ?? null;
-                $stdEspecificacaoST->indEscala = $request->input("itens.{$key}.escala_relevante") ?? null; //incluido no layout 4.00
-                $stdEspecificacaoST->CNPJFab = $request->input("itens.{$key}.cnpj_fabricante") ?? null; //incluido no layout 4.00
-                $this->nfe->tagCEST($stdEspecificacaoST);
+            if(!is_null($request->input('itens'))) {
 
 
-                $stdImpostoItem = new stdClass();
-                $stdImpostoItem->item = $request->input("itens.{$key}.numero_item"); //item da NFe
-                $stdImpostoItem->vTotTrib = $request->input("itens.{$key}.imposto.valor_aproximado_tributos");
-                $this->nfe->tagimposto($stdImpostoItem);
+                foreach ($request->input('itens') as $key => $item) {
 
-                if ($this->emitente->regime_tributario !== 1) {
+                    $stdProdutoItem = new stdClass();
+                    $stdProdutoItem->item = $request->input("itens.{$key}.numero_item"); //item da NFe
+                    $stdProdutoItem->cProd = $request->input("itens.{$key}.codigo_produto");
+                    $stdProdutoItem->cEAN = $request->input("itens.{$key}.codigo_barras_comercial") ?? "SEM GTIN";
+                    $stdProdutoItem->cEANTrib = $request->input("itens.{$key}.codigo_barras_tributavel") ?? "SEM GTIN";
+                    $stdProdutoItem->xProd = $request->input("itens.{$key}.descricao");
+                    $stdProdutoItem->NCM = $request->input("itens.{$key}.codigo_ncm");
+                    $stdProdutoItem->cBenef = $request->input("itens.{$key}.codigo_beneficio_fiscal") ?? null; //incluido no layout 4.00
+                    $stdProdutoItem->EXTIPI = $request->input("itens.{$key}.codigo_ex_tipi") ?? null;
+                    $stdProdutoItem->CFOP = $request->input("itens.{$key}.cfop");
+                    $stdProdutoItem->uCom = $request->input("itens.{$key}.unidade_comercial");
+                    $stdProdutoItem->qCom = $request->input("itens.{$key}.quantidade_comercial");
+                    $stdProdutoItem->vUnCom = $request->input("itens.{$key}.valor_unitario_comercial");
+                    $stdProdutoItem->uTrib = $request->input("itens.{$key}.unidade_tributavel");
+                    $stdProdutoItem->qTrib = $request->input("itens.{$key}.quantidade_tributavel");
+                    $stdProdutoItem->vUnTrib = $request->input("itens.{$key}.valor_unitario_tributavel");
+                    $stdProdutoItem->vProd = $request->input("itens.{$key}.valor_bruto");
+                    $stdProdutoItem->vFrete = $request->input("itens.{$key}.valor_frete") ?? null;
+                    $stdProdutoItem->vSeg = $request->input("itens.{$key}.valor_seguro") ?? null;
+                    $stdProdutoItem->vDesc = $request->input("itens.{$key}.valor_desconto") ?? null;
+                    $stdProdutoItem->vOutro = $request->input("itens.{$key}.valor_outras_despesas") ?? null;
+                    $stdProdutoItem->indTot = $request->input("itens.{$key}.inclui_no_total");
+                    $stdProdutoItem->xPed = $request->input("itens.{$key}.pedido_compra.numero") ?? null;
+                    $stdProdutoItem->nItemPed = $request->input("itens.{$key}.pedido_compra..item") ?? null;
+                    $stdProdutoItem->nFCI = $request->input("itens.{$key}.numero_fci") ?? null;
+                    $this->nfe->tagprod($stdProdutoItem);
 
-                    $stdICMSItem = new stdClass();
-                    $stdICMSItem->item = $request->input("itens.{$key}.numero_item"); //item da NFe
-                    $stdICMSItem->orig = $request->input("itens.{$key}.origem");
-                    $stdICMSItem->CST = $request->input("itens.{$key}.imposto.icms.situacao_tributaria");
-                    $stdICMSItem->modBC = $request->input("itens.{$key}.imposto.icms.modalidade_base_calculo");
-                    $stdICMSItem->vBC = $request->input("itens.{$key}.imposto.icms.valor_base_calculo") ?? null;
-                    $stdICMSItem->pICMS = $request->input("itens.{$key}.imposto.icms.aliquota") ?? '';
-                    $stdICMSItem->vICMS = $request->input("itens.{$key}.imposto.icms.valor") ?? '';
-                    $stdICMSItem->pFCP = $request->input("itens.{$key}.imposto.icms.fcp.aliquota ") ?? '';
-                    $stdICMSItem->vFCP = $request->input("itens.{$key}.imposto.icms.fcp.valor ") ?? '';
-                    $stdICMSItem->vBCFCP = $request->input("itens.{$key}.imposto.icms.fcp.valor_base_calculo ") ?? '';
-                    $stdICMSItem->modBCST = $request->input("itens.{$key}.imposto.icms.modalidade_base_calculo_st ") ?? '';
-                    $stdICMSItem->pMVAST = $request->input("itens.{$key}.imposto.icms.aliquota_margem_valor_adicionado_st ") ?? '';
-                    $stdICMSItem->pRedBCST = $request->input("itens.{$key}.imposto.icms.aliquota_reducao_base_calculo_st ") ?? '';
-                    $stdICMSItem->vBCST = $request->input("itens.{$key}.imposto.icms.valor_base_calculo_st") ?? '';
-                    $stdICMSItem->pICMSST = $request->input("itens.{$key}.imposto.icms.aliquota_st") ?? '';
-                    $stdICMSItem->vICMSST = $request->input("itens.{$key}.imposto.icms.valor_st") ?? '';
-                    $stdICMSItem->vBCFCPST = $request->input("itens.{$key}.imposto.icms.fcp.valor_base_calculo_st") ?? '';
-                    $stdICMSItem->pFCPST = $request->input("itens.{$key}.imposto.icms.fcp.aliquota_st") ?? '';
-                    $stdICMSItem->vFCPST = $request->input("itens.{$key}.imposto.icms.fcp.valor_st") ?? '';
-                    $stdICMSItem->vICMSDeson = $request->input("itens.{$key}.imposto.icms.valor_desonerado") ?? '';
-                    $stdICMSItem->motDesICMS = $request->input("itens.{$key}.imposto.icms.motivo_desoneracao") ?? '';
-                    $stdICMSItem->pRedBC = $request->input("itens.{$key}.imposto.icms.aliquota_reducao_base_calculo") ?? '';
-                    $stdICMSItem->vICMSOp = $request->input("itens.{$key}.imposto.icms.valor_operacao") ?? '';
-                    $stdICMSItem->pDif = $request->input("itens.{$key}.imposto.icms.aliquota_diferimento") ?? '';
-                    $stdICMSItem->vICMSDif = $request->input("itens.{$key}.imposto.icms.valor_diferido") ?? '';
+                    $stdEspecificacaoST = new stdClass();
+                    $stdEspecificacaoST->item = $request->input("itens.{$key}.numero_item"); //item da NFe
+                    $stdEspecificacaoST->CEST = $request->input("itens.{$key}.cest") ?? null;
+                    $stdEspecificacaoST->indEscala = $request->input("itens.{$key}.escala_relevante") ?? null; //incluido no layout 4.00
+                    $stdEspecificacaoST->CNPJFab = $request->input("itens.{$key}.cnpj_fabricante") ?? null; //incluido no layout 4.00
+                    $this->nfe->tagCEST($stdEspecificacaoST);
 
-                    $stdICMSItem->vBCSTRet = $request->input("itens.{$key}.imposto.icms.valor_base_calculo_retido_st") ?? '';
-                    $stdICMSItem->pST = $request->input("itens.{$key}.imposto.icms.aliquota_final ") ?? '';
-                    $stdICMSItem->vICMSSTRet = $request->input("itens.{$key}.imposto.icms.valor_retido_st") ?? '';
 
-                    // icms st - fundo de combate a pobreza
-                    $stdICMSItem->vBCFCPSTRet = $request->input("itens.{$key}.imposto.icms.fcp.valor_base_calculo_retido_st") ?? '';
-                    $stdICMSItem->pFCPSTRet = $request->input("itens.{$key}.imposto.icms.fcp.aliquota_retido_st") ?? '';
-                    $stdICMSItem->vFCPSTRet = $request->input("itens.{$key}.imposto.icms.fcp.valor_retido_st") ?? '';
+                    $stdImpostoItem = new stdClass();
+                    $stdImpostoItem->item = $request->input("itens.{$key}.numero_item"); //item da NFe
+                    $stdImpostoItem->vTotTrib = $request->input("itens.{$key}.imposto.valor_aproximado_tributos");
+                    $this->nfe->tagimposto($stdImpostoItem);
 
-                    $stdICMSItem->pRedBCEfet = $request->input("itens.{$key}.imposto.icms.aliquota_reducao_base_calculo_efetiva") ?? '';
-                    $stdICMSItem->vBCEfet = $request->input("itens.{$key}.imposto.icms.valor_base_calculo_efetiva") ?? '';
-                    $stdICMSItem->pICMSEfet = $request->input("itens.{$key}.imposto.icms.aliquota_efetiva") ?? '';
-                    $stdICMSItem->vICMSEfet = $request->input("itens.{$key}.imposto.icms.valor_efetivo") ?? '';
-                    $stdICMSItem->vICMSSubstituto = $request->input("itens.{$key}.imposto.icms.valor_substituto") ?? ''; //NT2018.005_1.10_Fevereiro de 2019
-                    $this->nfe->tagICMS($stdICMSItem);
+                    if ($this->emitente->regime_tributario !== 1) {
 
+                        $stdICMSItem = new stdClass();
+                        $stdICMSItem->item = $request->input("itens.{$key}.numero_item"); //item da NFe
+                        $stdICMSItem->orig = $request->input("itens.{$key}.origem");
+                        $stdICMSItem->CST = $request->input("itens.{$key}.imposto.icms.situacao_tributaria");
+                        $stdICMSItem->modBC = $request->input("itens.{$key}.imposto.icms.modalidade_base_calculo");
+                        $stdICMSItem->vBC = $request->input("itens.{$key}.imposto.icms.valor_base_calculo") ?? null;
+                        $stdICMSItem->pICMS = $request->input("itens.{$key}.imposto.icms.aliquota") ?? '';
+                        $stdICMSItem->vICMS = $request->input("itens.{$key}.imposto.icms.valor") ?? '';
+                        $stdICMSItem->pFCP = $request->input("itens.{$key}.imposto.icms.fcp.aliquota ") ?? '';
+                        $stdICMSItem->vFCP = $request->input("itens.{$key}.imposto.icms.fcp.valor ") ?? '';
+                        $stdICMSItem->vBCFCP = $request->input("itens.{$key}.imposto.icms.fcp.valor_base_calculo ") ?? '';
+                        $stdICMSItem->modBCST = $request->input("itens.{$key}.imposto.icms.modalidade_base_calculo_st ") ?? '';
+                        $stdICMSItem->pMVAST = $request->input("itens.{$key}.imposto.icms.aliquota_margem_valor_adicionado_st ") ?? '';
+                        $stdICMSItem->pRedBCST = $request->input("itens.{$key}.imposto.icms.aliquota_reducao_base_calculo_st ") ?? '';
+                        $stdICMSItem->vBCST = $request->input("itens.{$key}.imposto.icms.valor_base_calculo_st") ?? '';
+                        $stdICMSItem->pICMSST = $request->input("itens.{$key}.imposto.icms.aliquota_st") ?? '';
+                        $stdICMSItem->vICMSST = $request->input("itens.{$key}.imposto.icms.valor_st") ?? '';
+                        $stdICMSItem->vBCFCPST = $request->input("itens.{$key}.imposto.icms.fcp.valor_base_calculo_st") ?? '';
+                        $stdICMSItem->pFCPST = $request->input("itens.{$key}.imposto.icms.fcp.aliquota_st") ?? '';
+                        $stdICMSItem->vFCPST = $request->input("itens.{$key}.imposto.icms.fcp.valor_st") ?? '';
+                        $stdICMSItem->vICMSDeson = $request->input("itens.{$key}.imposto.icms.valor_desonerado") ?? '';
+                        $stdICMSItem->motDesICMS = $request->input("itens.{$key}.imposto.icms.motivo_desoneracao") ?? '';
+                        $stdICMSItem->pRedBC = $request->input("itens.{$key}.imposto.icms.aliquota_reducao_base_calculo") ?? '';
+                        $stdICMSItem->vICMSOp = $request->input("itens.{$key}.imposto.icms.valor_operacao") ?? '';
+                        $stdICMSItem->pDif = $request->input("itens.{$key}.imposto.icms.aliquota_diferimento") ?? '';
+                        $stdICMSItem->vICMSDif = $request->input("itens.{$key}.imposto.icms.valor_diferido") ?? '';
+
+                        $stdICMSItem->vBCSTRet = $request->input("itens.{$key}.imposto.icms.valor_base_calculo_retido_st") ?? '';
+                        $stdICMSItem->pST = $request->input("itens.{$key}.imposto.icms.aliquota_final ") ?? '';
+                        $stdICMSItem->vICMSSTRet = $request->input("itens.{$key}.imposto.icms.valor_retido_st") ?? '';
+
+                        // icms st - fundo de combate a pobreza
+                        $stdICMSItem->vBCFCPSTRet = $request->input("itens.{$key}.imposto.icms.fcp.valor_base_calculo_retido_st") ?? '';
+                        $stdICMSItem->pFCPSTRet = $request->input("itens.{$key}.imposto.icms.fcp.aliquota_retido_st") ?? '';
+                        $stdICMSItem->vFCPSTRet = $request->input("itens.{$key}.imposto.icms.fcp.valor_retido_st") ?? '';
+
+                        $stdICMSItem->pRedBCEfet = $request->input("itens.{$key}.imposto.icms.aliquota_reducao_base_calculo_efetiva") ?? '';
+                        $stdICMSItem->vBCEfet = $request->input("itens.{$key}.imposto.icms.valor_base_calculo_efetiva") ?? '';
+                        $stdICMSItem->pICMSEfet = $request->input("itens.{$key}.imposto.icms.aliquota_efetiva") ?? '';
+                        $stdICMSItem->vICMSEfet = $request->input("itens.{$key}.imposto.icms.valor_efetivo") ?? '';
+                        $stdICMSItem->vICMSSubstituto = $request->input("itens.{$key}.imposto.icms.valor_substituto") ?? ''; //NT2018.005_1.10_Fevereiro de 2019
+                        $this->nfe->tagICMS($stdICMSItem);
+
+                    }
+
+                    if ($csts_icms_st->contains($request->input("itens.{$key}.imposto.icms.situacao_tributaria"))) {
+                        $stdICMSSTRet = new stdClass();
+                        $stdICMSSTRet->item = $request->input("itens.{$key}.numero_item");; //item da NFe
+                        $stdICMSSTRet->orig = $request->input("itens.{$key}.origem");
+                        $stdICMSSTRet->CST = $request->input("itens.{$key}.imposto.icms.situacao_tributaria");
+
+                        $stdICMSSTRet->vBCSTRet = $request->input("itens.{$key}.imposto.icms.valor_base_calculo_retido_st") ?? '';
+                        $stdICMSSTRet->vICMSSTRet = $request->input("itens.{$key}.imposto.icms.valor_retido_st") ?? '';
+
+                        //$stdICMSSTRet->vBCSTDest = $request->input("itens.{$key}.imposto.icms.aliquota_final ") ?? '';
+                        //$stdICMSSTRet->vICMSSTDest = null;
+
+                        $stdICMSSTRet->vBCFCPSTRet = $request->input("itens.{$key}.imposto.icms.fcp.valor_base_calculo_retido_st") ?? null;
+                        $stdICMSSTRet->pFCPSTRet = $request->input("itens.{$key}.imposto.icms.fcp.valor_base_calculo_retido_st") ?? null;
+                        $stdICMSSTRet->vFCPSTRet = $request->input("itens.{$key}.imposto.icms.fcp.valor_base_calculo_retido_st") ?? null;
+                        $stdICMSSTRet->pST = $request->input("itens.{$key}.imposto.icms.fcp.valor_base_calculo_retido_st") ?? null;
+                        $stdICMSSTRet->vICMSSubstituto = $request->input("itens.{$key}.imposto.icms.fcp.valor_base_calculo_retido_st") ?? null;
+                        $stdICMSSTRet->pRedBCEfet = $request->input("itens.{$key}.imposto.icms.fcp.valor_base_calculo_retido_st") ?? null;
+                        $stdICMSSTRet->vBCEfet = $request->input("itens.{$key}.imposto.icms.fcp.valor_base_calculo_retido_st") ?? null;
+                        $stdICMSSTRet->pICMSEfet = $request->input("itens.{$key}.imposto.icms.fcp.valor_base_calculo_retido_st") ?? null;
+                        $stdICMSSTRet->vICMSEfet = $request->input("itens.{$key}.imposto.icms.fcp.valor_base_calculo_retido_st") ?? null;
+                        $this->nfe->tagICMSST($stdICMSSTRet);
+                    }
+
+                    if ($this->emitente->regime_tributario === 1) {
+
+                        $stdICMSSNItem = new stdClass();
+                        $stdICMSSNItem->item = $request->input("itens.{$key}.numero_item"); //item da NFe
+                        $stdICMSSNItem->orig = $request->input("itens.{$key}.origem");
+                        $stdICMSSNItem->CSOSN = $request->input("itens.{$key}.imposto.icms.situacao_tributaria");
+                        $stdICMSSNItem->pCredSN = $request->input("itens.{$key}.imposto.icms.aliquota_credito_simples");
+                        $stdICMSSNItem->vCredICMSSN = $request->input("itens.{$key}.imposto.icms.valor_credito_simples");
+                        $stdICMSSNItem->modBCST = $request->input("itens.{$key}.imposto.icms.modalidade_base_calculo_st") ?? null;
+                        $stdICMSSNItem->pMVAST = $request->input("itens.{$key}.imposto.icms.aliquota_margem_valor_adicionado_st") ?? null;
+                        $stdICMSSNItem->pRedBCST = $request->input("itens.{$key}.imposto.icms.aliquota_reducao_base_calculo_st") ?? null;
+                        $stdICMSSNItem->vBCST = $request->input("itens.{$key}.imposto.icms.valor_base_calculo_st") ?? null;
+                        $stdICMSSNItem->pICMSST = $request->input("itens.{$key}.imposto.icms.aliquota_st") ?? null;
+                        $stdICMSSNItem->vICMSST = $request->input("itens.{$key}.imposto.icms.valor_st") ?? null;
+                        $stdICMSSNItem->vBCFCPST = $request->input("itens.{$key}.imposto.icms.fcp.valor_base_calculo_st") ?? null; //incluso no layout 4.00
+                        $stdICMSSNItem->pFCPST = $request->input("itens.{$key}.imposto.icms.fcp.aliquota_st") ?? null; //incluso no layout 4.00
+                        $stdICMSSNItem->vFCPST = $request->input("itens.{$key}.imposto.icms.fcp.valor_st") ?? null; //incluso no layout 4.00
+                        $stdICMSSNItem->vBCSTRet = $request->input("itens.{$key}.imposto.icms.valor_base_calculo_retido_st") ?? null;
+                        $stdICMSSNItem->pST = $request->input("itens.{$key}.imposto.icms.aliquota_final") ?? null;
+                        $stdICMSSNItem->vICMSSTRet = $request->input("itens.{$key}.imposto.icms.valor_retido_st") ?? null;
+                        $stdICMSSNItem->vBCFCPSTRet = $request->input("itens.{$key}.imposto.icms.valor_base_calculo_retido_st") ?? null; //incluso no layout 4.00
+                        $stdICMSSNItem->pFCPSTRet = $request->input("itens.{$key}.imposto.icms.aliquota_retido_st") ?? null; //incluso no layout 4.00
+                        $stdICMSSNItem->vFCPSTRet = $request->input("itens.{$key}.imposto.icms.valor_retido_st") ?? null; //incluso no layout 4.00
+                        $stdICMSSNItem->modBC = $request->input("itens.{$key}.imposto.icms.modalidade_base_calculo") ?? null;
+                        $stdICMSSNItem->vBC = $request->input("itens.{$key}.imposto.icms.valor_base_calculo") ?? null;
+                        $stdICMSSNItem->pRedBC = $request->input("itens.{$key}.imposto.icms.aliquota_reducao_base_calculo") ?? null;
+                        $stdICMSSNItem->pICMS = $request->input("itens.{$key}.imposto.icms.aliquota") ?? null;
+                        $stdICMSSNItem->vICMS = $request->input("itens.{$key}.imposto.icms.valor") ?? null;
+
+                        $stdICMSSNItem->pRedBCEfet = $request->input("itens.{$key}.imposto.icms.aliquota_reducao_base_calculo_efetiva") ?? null;
+                        $stdICMSSNItem->vBCEfet = $request->input("itens.{$key}.imposto.icms.valor_base_calculo_efetiva") ?? null;
+                        $stdICMSSNItem->pICMSEfet = $request->input("itens.{$key}.imposto.icms.aliquota_efetiva") ?? null;
+                        $stdICMSSNItem->vICMSEfet = $request->input("itens.{$key}.imposto.icms.valor_efetivo") ?? null;
+                        $stdICMSSNItem->vICMSSubstituto = $request->input("itens.{$key}.imposto.icms.valor_substituto") ?? null;
+                        $this->nfe->tagICMSSN($stdICMSSNItem);
+                    }
+
+                    $stdIPIItem = new stdClass();
+                    $stdIPIItem->item = $request->input("itens.{$key}.numero_item"); //item da NFe
+                    //$stdIPIItem->clEnq = $request->input("itens.{$key}.imposto.ipi.") ?? null;
+                    $stdIPIItem->CNPJProd = $request->input("itens.{$key}.imposto.ipi.cnpj_produtor") ?? null;
+                    $stdIPIItem->cSelo = $request->input("itens.{$key}.imposto.ipi.codigo_selo_controle") ?? null;
+                    $stdIPIItem->qSelo = $request->input("itens.{$key}.imposto.ipi.quantidade_selo_controle") ?? null;
+                    $stdIPIItem->cEnq = $request->input("itens.{$key}.imposto.ipi.codigo_enquadramento_legal") ?? '999';
+                    $stdIPIItem->CST = $request->input("itens.{$key}.imposto.ipi.situacao_tributaria") ?? '99';
+                    $stdIPIItem->vIPI = $request->input("itens.{$key}.imposto.ipi.valor") ?? 0.00;
+                    $stdIPIItem->vBC = $request->input("itens.{$key}.imposto.ipi.valor_base_calculo") ?? 0.00;
+                    $stdIPIItem->pIPI = $request->input("itens.{$key}.imposto.ipi.aliquota") ?? 0.00;
+                    $stdIPIItem->qUnid = $request->input("itens.{$key}.imposto.ipi.quantidade_total") ?? null;
+                    $stdIPIItem->vUnid = $request->input("itens.{$key}.imposto.ipi.valor_unidade_tributavel") ?? null;
+                    $this->nfe->tagIPI($stdIPIItem);
+
+                    $stdPISItem = new stdClass();
+                    $stdPISItem->item = $request->input("itens.{$key}.numero_item"); //item da NFe
+                    $stdPISItem->CST = $request->input("itens.{$key}.imposto.pis.situacao_tributaria");
+                    $stdPISItem->vBC = $request->input("itens.{$key}.imposto.pis.valor_base_calculo") ?? null;
+                    $stdPISItem->pPIS = $request->input("itens.{$key}.imposto.pis.aliquota") ?? null;
+                    $stdPISItem->vPIS = $request->input("itens.{$key}.imposto.pis.valor") ?? null;
+                    $stdPISItem->qBCProd = $request->input("itens.{$key}.imposto.pis.quantidade_vendida") ?? null;
+                    $stdPISItem->vAliqProd = $request->input("itens.{$key}.imposto.pis.aliquota_valor") ?? null;
+                    $this->nfe->tagPIS($stdPISItem);
+
+                    $stdCOFINSItem = new stdClass();
+                    $stdCOFINSItem->item = $request->input("itens.{$key}.numero_item"); //item da NFe
+                    $stdCOFINSItem->CST = $request->input("itens.{$key}.imposto.cofins.situacao_tributaria");
+                    $stdCOFINSItem->vBC = $request->input("itens.{$key}.imposto.cofins.valor_base_calculo") ?? null;
+                    $stdCOFINSItem->pCOFINS = $request->input("itens.{$key}.imposto.cofins.aliquota") ?? null;
+                    $stdCOFINSItem->vCOFINS = $request->input("itens.{$key}.imposto.cofins.valor") ?? null;
+                    $stdCOFINSItem->qBCProd = $request->input("itens.{$key}.imposto.cofins.quantidade_vendida") ?? null;
+                    $stdCOFINSItem->vAliqProd = $request->input("itens.{$key}.imposto.cofins.aliquota_valor") ?? null;
+                    $this->nfe->tagCOFINS($stdCOFINSItem);
                 }
-
-                if($csts_icms_st->contains($request->input("itens.{$key}.imposto.icms.situacao_tributaria"))){
-                    $stdICMSSTRet = new stdClass();
-                    $stdICMSSTRet->item = $request->input("itens.{$key}.numero_item");; //item da NFe
-                    $stdICMSSTRet->orig = $request->input("itens.{$key}.origem");
-                    $stdICMSSTRet->CST = $request->input("itens.{$key}.imposto.icms.situacao_tributaria");
-
-                    $stdICMSSTRet->vBCSTRet = $request->input("itens.{$key}.imposto.icms.valor_base_calculo_retido_st") ?? '';
-                    $stdICMSSTRet->vICMSSTRet = $request->input("itens.{$key}.imposto.icms.valor_retido_st") ?? '';
-
-                    //$stdICMSSTRet->vBCSTDest = $request->input("itens.{$key}.imposto.icms.aliquota_final ") ?? '';
-                    //$stdICMSSTRet->vICMSSTDest = null;
-
-                    $stdICMSSTRet->vBCFCPSTRet = $request->input("itens.{$key}.imposto.icms.fcp.valor_base_calculo_retido_st") ?? null;
-                    $stdICMSSTRet->pFCPSTRet = $request->input("itens.{$key}.imposto.icms.fcp.valor_base_calculo_retido_st") ?? null;
-                    $stdICMSSTRet->vFCPSTRet = $request->input("itens.{$key}.imposto.icms.fcp.valor_base_calculo_retido_st") ?? null;
-                    $stdICMSSTRet->pST = $request->input("itens.{$key}.imposto.icms.fcp.valor_base_calculo_retido_st") ?? null;
-                    $stdICMSSTRet->vICMSSubstituto = $request->input("itens.{$key}.imposto.icms.fcp.valor_base_calculo_retido_st") ?? null;
-                    $stdICMSSTRet->pRedBCEfet = $request->input("itens.{$key}.imposto.icms.fcp.valor_base_calculo_retido_st") ?? null;
-                    $stdICMSSTRet->vBCEfet = $request->input("itens.{$key}.imposto.icms.fcp.valor_base_calculo_retido_st") ?? null;
-                    $stdICMSSTRet->pICMSEfet = $request->input("itens.{$key}.imposto.icms.fcp.valor_base_calculo_retido_st") ?? null;
-                    $stdICMSSTRet->vICMSEfet = $request->input("itens.{$key}.imposto.icms.fcp.valor_base_calculo_retido_st") ?? null;
-                    $this->nfe->tagICMSST($stdICMSSTRet);
-                }
-
-                if ($this->emitente->regime_tributario === 1) {
-
-                    $stdICMSSNItem = new stdClass();
-                    $stdICMSSNItem->item = $request->input("itens.{$key}.numero_item"); //item da NFe
-                    $stdICMSSNItem->orig = $request->input("itens.{$key}.origem");
-                    $stdICMSSNItem->CSOSN = $request->input("itens.{$key}.imposto.icms.situacao_tributaria");
-                    $stdICMSSNItem->pCredSN = $request->input("itens.{$key}.imposto.icms.aliquota_credito_simples");
-                    $stdICMSSNItem->vCredICMSSN = $request->input("itens.{$key}.imposto.icms.valor_credito_simples");
-                    $stdICMSSNItem->modBCST = $request->input("itens.{$key}.imposto.icms.modalidade_base_calculo_st") ?? null;
-                    $stdICMSSNItem->pMVAST = $request->input("itens.{$key}.imposto.icms.aliquota_margem_valor_adicionado_st") ?? null;
-                    $stdICMSSNItem->pRedBCST = $request->input("itens.{$key}.imposto.icms.aliquota_reducao_base_calculo_st") ?? null;
-                    $stdICMSSNItem->vBCST = $request->input("itens.{$key}.imposto.icms.valor_base_calculo_st") ?? null;
-                    $stdICMSSNItem->pICMSST = $request->input("itens.{$key}.imposto.icms.aliquota_st") ?? null;
-                    $stdICMSSNItem->vICMSST = $request->input("itens.{$key}.imposto.icms.valor_st") ?? null;
-                    $stdICMSSNItem->vBCFCPST = $request->input("itens.{$key}.imposto.icms.fcp.valor_base_calculo_st") ?? null; //incluso no layout 4.00
-                    $stdICMSSNItem->pFCPST = $request->input("itens.{$key}.imposto.icms.fcp.aliquota_st") ?? null; //incluso no layout 4.00
-                    $stdICMSSNItem->vFCPST = $request->input("itens.{$key}.imposto.icms.fcp.valor_st") ?? null; //incluso no layout 4.00
-                    $stdICMSSNItem->vBCSTRet = $request->input("itens.{$key}.imposto.icms.valor_base_calculo_retido_st") ?? null;
-                    $stdICMSSNItem->pST = $request->input("itens.{$key}.imposto.icms.aliquota_final") ?? null;
-                    $stdICMSSNItem->vICMSSTRet = $request->input("itens.{$key}.imposto.icms.valor_retido_st") ?? null;
-                    $stdICMSSNItem->vBCFCPSTRet = $request->input("itens.{$key}.imposto.icms.valor_base_calculo_retido_st") ?? null; //incluso no layout 4.00
-                    $stdICMSSNItem->pFCPSTRet = $request->input("itens.{$key}.imposto.icms.aliquota_retido_st") ?? null; //incluso no layout 4.00
-                    $stdICMSSNItem->vFCPSTRet = $request->input("itens.{$key}.imposto.icms.valor_retido_st") ?? null; //incluso no layout 4.00
-                    $stdICMSSNItem->modBC = $request->input("itens.{$key}.imposto.icms.modalidade_base_calculo") ?? null;
-                    $stdICMSSNItem->vBC = $request->input("itens.{$key}.imposto.icms.valor_base_calculo") ?? null;
-                    $stdICMSSNItem->pRedBC = $request->input("itens.{$key}.imposto.icms.aliquota_reducao_base_calculo") ?? null;
-                    $stdICMSSNItem->pICMS = $request->input("itens.{$key}.imposto.icms.aliquota") ?? null;
-                    $stdICMSSNItem->vICMS = $request->input("itens.{$key}.imposto.icms.valor") ?? null;
-
-                    $stdICMSSNItem->pRedBCEfet = $request->input("itens.{$key}.imposto.icms.aliquota_reducao_base_calculo_efetiva") ?? null;
-                    $stdICMSSNItem->vBCEfet = $request->input("itens.{$key}.imposto.icms.valor_base_calculo_efetiva") ?? null;
-                    $stdICMSSNItem->pICMSEfet = $request->input("itens.{$key}.imposto.icms.aliquota_efetiva") ?? null;
-                    $stdICMSSNItem->vICMSEfet = $request->input("itens.{$key}.imposto.icms.valor_efetivo") ?? null;
-                    $stdICMSSNItem->vICMSSubstituto = $request->input("itens.{$key}.imposto.icms.valor_substituto") ?? null;
-                    $this->nfe->tagICMSSN($stdICMSSNItem);
-                }
-
-                $stdIPIItem = new stdClass();
-                $stdIPIItem->item = $request->input("itens.{$key}.numero_item"); //item da NFe
-                //$stdIPIItem->clEnq = $request->input("itens.{$key}.imposto.ipi.") ?? null;
-                $stdIPIItem->CNPJProd = $request->input("itens.{$key}.imposto.ipi.cnpj_produtor") ?? null;
-                $stdIPIItem->cSelo = $request->input("itens.{$key}.imposto.ipi.codigo_selo_controle") ?? null;
-                $stdIPIItem->qSelo = $request->input("itens.{$key}.imposto.ipi.quantidade_selo_controle") ?? null;
-                $stdIPIItem->cEnq = $request->input("itens.{$key}.imposto.ipi.codigo_enquadramento_legal") ?? '999';
-                $stdIPIItem->CST = $request->input("itens.{$key}.imposto.ipi.situacao_tributaria") ?? '99';
-                $stdIPIItem->vIPI = $request->input("itens.{$key}.imposto.ipi.valor") ?? 0.00;
-                $stdIPIItem->vBC = $request->input("itens.{$key}.imposto.ipi.valor_base_calculo") ?? 0.00;
-                $stdIPIItem->pIPI = $request->input("itens.{$key}.imposto.ipi.aliquota") ?? 0.00;
-                $stdIPIItem->qUnid = $request->input("itens.{$key}.imposto.ipi.quantidade_total") ?? null;
-                $stdIPIItem->vUnid = $request->input("itens.{$key}.imposto.ipi.valor_unidade_tributavel") ?? null;
-                $this->nfe->tagIPI($stdIPIItem);
-
-                $stdPISItem = new stdClass();
-                $stdPISItem->item = $request->input("itens.{$key}.numero_item"); //item da NFe
-                $stdPISItem->CST = $request->input("itens.{$key}.imposto.pis.situacao_tributaria");
-                $stdPISItem->vBC = $request->input("itens.{$key}.imposto.pis.valor_base_calculo") ?? null;
-                $stdPISItem->pPIS = $request->input("itens.{$key}.imposto.pis.aliquota") ?? null;
-                $stdPISItem->vPIS = $request->input("itens.{$key}.imposto.pis.valor") ?? null;
-                $stdPISItem->qBCProd = $request->input("itens.{$key}.imposto.pis.quantidade_vendida") ?? null;
-                $stdPISItem->vAliqProd = $request->input("itens.{$key}.imposto.pis.aliquota_valor") ?? null;
-                $this->nfe->tagPIS($stdPISItem);
-
-                $stdCOFINSItem = new stdClass();
-                $stdCOFINSItem->item = $request->input("itens.{$key}.numero_item"); //item da NFe
-                $stdCOFINSItem->CST = $request->input("itens.{$key}.imposto.cofins.situacao_tributaria");
-                $stdCOFINSItem->vBC = $request->input("itens.{$key}.imposto.cofins.valor_base_calculo") ?? null;
-                $stdCOFINSItem->pCOFINS = $request->input("itens.{$key}.imposto.cofins.aliquota") ?? null;
-                $stdCOFINSItem->vCOFINS = $request->input("itens.{$key}.imposto.cofins.valor") ?? null;
-                $stdCOFINSItem->qBCProd = $request->input("itens.{$key}.imposto.cofins.quantidade_vendida") ?? null;
-                $stdCOFINSItem->vAliqProd = $request->input("itens.{$key}.imposto.cofins.aliquota_valor") ?? null;
-                $this->nfe->tagCOFINS($stdCOFINSItem);
             }
 
             // se não for passado a lib irá calcular com base nos itens
@@ -319,7 +322,7 @@ class NFeService extends DocumentosFiscaisAbstract
             $stdFrete->modFrete = $request->input("frete.modalidade_frete") ?? 9;
             $this->nfe->tagtransp($stdFrete);
 
-            if($request->input("frete.modalidade_frete") != '9') {
+            if($request->input("frete.modalidade_frete") !== '9') {
 
                 $stdTransportadora = new stdClass();
                 $stdTransportadora->xNome = $request->input("frete.transportador.nome");
@@ -330,33 +333,39 @@ class NFeService extends DocumentosFiscaisAbstract
                 $stdTransportadora->CNPJ = $request->input("frete.transportador.cnpj") ?? null;//só pode haver um ou CNPJ ou CPF, se um deles é especificado o outro deverá ser null
                 $stdTransportadora->CPF = $request->input("frete.transportador.cpf") ?? null;
                 $this->nfe->tagtransporta($stdTransportadora);
+
+                $stdVeiculoTrator = new stdClass();
+                $stdVeiculoTrator->placa = $request->input("frete.veiculo.placa");
+                $stdVeiculoTrator->UF = $request->input("frete.veiculo.uf");
+                $stdVeiculoTrator->RNTC = $request->input("frete.veiculo.rntc");
+                $this->nfe->tagveicTransp($stdVeiculoTrator);
+
+                if(!is_null($request->input('frete.veiculo.reboques'))){
+                    foreach ($request->input('frete.veiculo.reboques') as $key => $item) {
+
+                        $stdReboque = new stdClass();
+                        $stdReboque->placa =  $request->input("frete.veiculo.reboques.{$key}.placa");
+                        $stdReboque->UF = $request->input("frete.veiculo.reboques.{$key}.uf");
+                        $stdReboque->RNTC = $request->input("frete.veiculo.reboques.{$key}.rntc");
+                        $this->nfe->tagreboque($stdReboque);
+                    }
+                }
             }
 
-            $stdVeiculoTrator = new stdClass();
-            $stdVeiculoTrator->placa = $request->input("frete.veiculo.placa");
-            $stdVeiculoTrator->UF = $request->input("frete.veiculo.uf");
-            $stdVeiculoTrator->RNTC = $request->input("frete.veiculo.rntc");
-            $this->nfe->tagveicTransp($stdVeiculoTrator);
 
-            foreach ($request->input('frete.veiculo.reboques') as $key => $item) {
 
-                $stdReboque = new stdClass();
-                $stdReboque->placa =  $request->input("frete.veiculo.reboques.{$key}.placa");
-                $stdReboque->UF = $request->input("frete.veiculo.reboques.{$key}.uf");
-                $stdReboque->RNTC = $request->input("frete.veiculo.reboques.{$key}.rntc");
-                $this->nfe->tagreboque($stdReboque);
-            }
-
-            foreach ($request->input('frete.veiculo.reboques') as $key => $item) {
-                $stdVolumes = new stdClass();
-                $stdVolumes->item = $key++; //indicativo do numero do volume
-                $stdVolumes->qVol = $request->input("frete.volumes.{$key}.quantidade");
-                $stdVolumes->esp = $request->input("frete.volumes.{$key}.especie") ?? '';
-                $stdVolumes->marca = $request->input("frete.volumes.{$key}.marca") ?? '';
-                $stdVolumes->nVol = $request->input("frete.volumes.{$key}.numero") ?? '';
-                $stdVolumes->pesoL = $request->input("frete.volumes.{$key}.peso_liquido") ?? 0.00;
-                $stdVolumes->pesoB = $request->input("frete.volumes.{$key}.peso_bruto") ?? 0.00;
-                $this->nfe->tagvol($stdVolumes);
+            if(!is_null($request->input('frete.volumes s'))) {
+                foreach ($request->input('frete.volumes ') as $key => $item) {
+                    $stdVolumes = new stdClass();
+                    $stdVolumes->item = $key++; //indicativo do numero do volume
+                    $stdVolumes->qVol = $request->input("frete.volumes.{$key}.quantidade");
+                    $stdVolumes->esp = $request->input("frete.volumes.{$key}.especie") ?? '';
+                    $stdVolumes->marca = $request->input("frete.volumes.{$key}.marca") ?? '';
+                    $stdVolumes->nVol = $request->input("frete.volumes.{$key}.numero") ?? '';
+                    $stdVolumes->pesoL = $request->input("frete.volumes.{$key}.peso_liquido") ?? 0.00;
+                    $stdVolumes->pesoB = $request->input("frete.volumes.{$key}.peso_bruto") ?? 0.00;
+                    $this->nfe->tagvol($stdVolumes);
+                }
             }
 
             $stdFaturaCobranca = new stdClass();
@@ -366,50 +375,61 @@ class NFeService extends DocumentosFiscaisAbstract
             $stdFaturaCobranca->vLiq = $request->input("cobranca.fatura.valor_liquido");
             $this->nfe->tagfat($stdFaturaCobranca);
 
-
-            foreach ($request->input('cobranca.duplicatas') as $key => $item) {
-                $stdDuplicata = new stdClass();
-                $stdDuplicata->nDup = $key++;
-                $stdDuplicata->dVenc = $request->input("cobranca.duplicatas.{$key}.data_vencimento");
-                $stdDuplicata->vDup = $request->input("cobranca.duplicatas.{$key}.valor");
-                $this->nfe->tagdup($stdDuplicata);
+            if(!is_null($request->input('cobranca.duplicatas'))){
+                foreach ($request->input('cobranca.duplicatas') as $key => $item) {
+                    $stdDuplicata = new stdClass();
+                    $stdDuplicata->nDup = $key++;
+                    $stdDuplicata->dVenc = $request->input("cobranca.duplicatas.{$key}.data_vencimento");
+                    $stdDuplicata->vDup = $request->input("cobranca.duplicatas.{$key}.valor");
+                    $this->nfe->tagdup($stdDuplicata);
+                }
             }
 
             $stdPagamento = new StdClass();
             $stdPagamento->vTroco = $request->input('pagamento.valor_troco');
             $this->nfe->tagpag($stdPagamento);
 
-            $stdDetalhePagamento = new stdClass();
-            $stdDetalhePagamento->tPag = '01';
-            $stdDetalhePagamento->vPag = $stdProdutoItem->vProd; //Obs: deve ser informado o valor pago pelo cliente
-            $stdDetalhePagamento->CNPJ = '';
-            $stdDetalhePagamento->tBand = '';
-            $stdDetalhePagamento->cAut = '';
-            $stdDetalhePagamento->tpIntegra = 2; //incluso na NT 2015/002
-            $stdDetalhePagamento->indPag = '0'; //0= Pagamento à Vista 1= Pagamento à Prazo
-
-            $this->nfe->tagdetPag($stdDetalhePagamento);
+            if(!is_null($request->input('pagamento.formas_pagamento'))){
+                foreach ($request->input('pagamento.formas_pagamento') as $key => $item) {
+                    $stdDetalhePagamento = new stdClass();
+                    $stdDetalhePagamento->tPag = $request->input("pagamento.formas_pagamento.{$key}.meio_pagamento");
+                    $stdDetalhePagamento->vPag = $request->input("pagamento.formas_pagamento.{$key}.valor"); //Obs: deve ser informado o valor pago pelo cliente
+                    $stdDetalhePagamento->CNPJ = $request->input("pagamento.formas_pagamento.cartao.{$key}.cartao.cnpj_credenciadora") ?? '';
+                    $stdDetalhePagamento->tBand = $request->input("pagamento.formas_pagamento.cartao.{$key}.cartao.bandeira_operadora") ?? '';
+                    $stdDetalhePagamento->cAut = $request->input("pagamento.formas_pagamento.{$key}.numero_autorizacao") ?? '';
+                    $stdDetalhePagamento->tpIntegra = $request->input("pagamento.formas_pagamento.{$key}.tipo_integracao"); //incluso na NT 2015/002
+                    $stdDetalhePagamento->indPag = $request->input("pagamento.formas_pagamento.{$key}.indicador_pagamento");//0= Pagamento à Vista 1= Pagamento à Prazo
+                    $this->nfe->tagdetPag($stdDetalhePagamento);
+                }
+            }
 
             $stdInfoAdic = new stdClass();
-            $stdInfoAdic->infAdFisco = 'informacoes para o fisco';
-            $stdInfoAdic->infCpl = 'DOCUMENTO EMITIDO POR ME OU EPP OPTANTE PELO SIMPLES NACIONAL E NAO GERA DIREITO A CREDITO DE ICMS, IPI OU ISS.|Valor Total Aprox. dos Tributos R$ 39,16 ( 18,92%)';
-
+            $stdInfoAdic->infAdFisco = $request->input('informacoes_adicionais_fisco');
+            $stdInfoAdic->infCpl = $request->input('informacoes_adicionais_contribuinte');
             $this->nfe->taginfAdic($stdInfoAdic);
 
             $stdAutorizadoXml = new stdClass();
             $stdAutorizadoXml->CNPJ = $request->input('pessoas_autorizadas.cnpj') ?? null; //indicar um CNPJ ou CPF
             $stdAutorizadoXml->CPF = $request->input('pessoas_autorizadas.cpf') ?? null;
-
             $this->nfe->tagautXML($stdAutorizadoXml);
 
-            $xml = $this->nfe->montaNFe();
+            $resp = $this->nfe->montaNFe();
 
-            $this->chave = $this->getChave();
+            if(!$resp) {
 
-            return $xml;
 
-        } catch (Exception $e) {
-            exit($e->getMessage());
+
+            }
+
+            return [
+                'sucesso' => true,
+                'data' => $this->nfe->getXML(),
+            ];
+
+       } catch (Exception $e) {
+            return [
+                'sucesso' => false,
+            ];
         }
     }
 
@@ -418,7 +438,6 @@ class NFeService extends DocumentosFiscaisAbstract
 
             $xml = file_get_contents('app/storage/orbe_do_brasil_ltda/xml_dfe_files/2021/abril/16/xmlDfe-43210406103611000141550010000001831013821390.xml');
             $logo = 'data://text/plain;base64,'. base64_encode(file_get_contents('app/storage/orbe_do_brasil_ltda/logo_nfe.jpg'));
-
 
         try {
             //$danfe = new DanfeSimples($xml);
@@ -437,6 +456,7 @@ class NFeService extends DocumentosFiscaisAbstract
 
             $danfe = new Danfe($authorizedXml);
             $danfe->debugMode(false);
+
             //$danfe->creditsIntegratorFooter('WEBNFe Sistemas - http://www.webenf.com.br');
             //$danfe->obsContShow(false);
             //$danfe->epec('891180004131899', '14/08/2018 11:24:45'); //marca como autorizada por EPEC

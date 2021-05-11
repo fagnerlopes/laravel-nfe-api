@@ -4,40 +4,30 @@
 namespace App\Traits;
 
 
+use Exception;
+use Illuminate\Http\Response;
+
 trait ApiResponser
 {
-    /**
-     * Return a success JSON response.
-     *
-     * @param  array|string  $data
-     * @param  string  $message
-     * @param  int|null  $code
-     * @return \Illuminate\Http\JsonResponse
-     */
-    protected function success($data, string $message = null, int $code = 200)
+
+    protected function successResponse(array $data, int $statusCode = Response::HTTP_OK): array
     {
-        return response()->json([
-            'status' => 'Success',
-            'message' => $message,
+        return [
+            'sucesso' => true,
+            'code' => $statusCode,
             'data' => $data
-        ], $code);
+        ];
     }
 
-    /**
-     * Return an error JSON response.
-     *
-     * @param  string  $message
-     * @param  int  $code
-     * @param  array|string|null  $data
-     * @return \Illuminate\Http\JsonResponse
-     */
-    protected function error(string $message = null, int $code, $data = null)
+    protected function errorResponse(Exception $e, int $statusCode = Response::HTTP_BAD_REQUEST):array
     {
-        return response()->json([
-            'status' => 'Error',
-            'message' => $message,
-            'data' => $data
-        ], $code);
+        return [
+            'sucesso' => false,
+            'code' => $statusCode,
+            'error_description' => $e->getMessage()
+        ];
     }
+
+
 
 }
