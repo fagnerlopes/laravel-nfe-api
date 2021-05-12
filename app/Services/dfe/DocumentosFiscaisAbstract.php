@@ -4,12 +4,17 @@ declare(strict_types=1);
 
 namespace App\Services\dfe;
 
+use App\Models\Documento;
 use App\Models\Emitente;
+use App\Models\Evento;
+use Carbon\Carbon;
 use Exception;
 use DateTime;
 use DateTimeZone;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use NFePHP\Common\Certificate;
 use NFePHP\NFe\Common\Standardize;
 use NFePHP\NFe\Complements;
@@ -28,9 +33,9 @@ abstract class DocumentosFiscaisAbstract implements DocumentosFiscaisInterface
     protected $tools;
     protected $nfe;
     protected $modelo;
+    protected $documentoId;
     protected $chave;
     protected $emitente;
-
 
 
     public function __construct(Emitente $emitente, string $modelo)
@@ -90,112 +95,101 @@ abstract class DocumentosFiscaisAbstract implements DocumentosFiscaisInterface
     abstract public function buildNFeXml(Request $request);
 
 
-    public function assignXml(string $xml)
+    public function assignXml(array $data)
     {
-        try {
-            if(!isset($this->tools) && empty($this->tools)) {
-                throw new Exception('Erro ao assinar o xml', 9002);
+        if(!is_null($data)) {
+            if(!is_null($data['xml'])) {
+                $xmlsigned = $this->tools->signNFe($data['xml']);
+
+                $documentoData = [
+                    'chave' => $data['chave'],
+                    'numero' => $data['numero'],
+                    'serie' => $data['serie'],
+                    'conteudo_xml_assinado' => base64_encode($xmlsigned)
+                ];
+
+                $documento = $this->emitente->documentos()->create($documentoData);
+
+                if($documento) {
+                    return $documento;
+                }
             }
-
-            return [
-                'sucesso' => true,
-                'codigo' => 1000,
-                'mensagem' => 'XML assinado com sucesso',
-                'data' => $this->tools->signNFe((string) $xml)
-            ];
-
-
-        } catch (Exception $e) {
-            return [
-                'sucesso' => false,
-                'codigo' => $e->getCode(),
-                'mensagem' => $e->getMessage(),
-                'data' => null
-            ];
         }
+
     }
 
 
-    public function sendBatch(string $signedXml)
+    public function sendBatch(Documento $documento)
     {
-        try {
-            $idBatch = str_pad('100', 15, '0', STR_PAD_LEFT);
+        $idBatch = str_pad('100', 15, '0', STR_PAD_LEFT);
 
-            $response = $this->tools->sefazEnviaLote([$signedXml], $idBatch);
+        $response = $this->tools->sefazEnviaLote([base64_decode($documento->conteudo_xml_assinado)], $idBatch);
 
-            $st = new Standardize();
-            $std = $st->toStd($response);
+        $std = new Standardize();
+        $stdClass = $std->toStd($response);
 
-            if ($std->cStat != 103) {
-                throw new Exception($std->xMotivo, $std->cStat);
-            }
+        $eventoData = [
+            'nome_evento' => 'envio_lote',
+            'codigo' => $stdClass->cStat,
+            'mensagem_retorno' => $stdClass->xMotivo,
+            'data_hora_evento' => Carbon::createFromFormat('c', $stdClass->dhRecbto)->format('Y-m-d H:m:s'),
+            'recibo' => $stdClass->infRec->nRec,
+        ];
 
-            return [
-                'sucesso' => true,
-                'codigo' => $std->cStat,
-                'mensagem' => $std->xMotivo,
-                'data' => $std->infRec->nRec,
-            ];
-
-        } catch (Exception $e) {
-            return [
-                'sucesso' => false,
-                'codigo' => $e->getCode(),
-                'motivo' => $e->getMessage(),
-                'data' => null,
-            ];
+        if($stdClass->cStat == 103 || $stdClass->cStat == 104 || $stdClass->cStat == 105 ){
+            $evento = $documento->eventos()->create($eventoData);
+        } else {
+            $evento = json_decode(json_encode($eventoData));
         }
+        return $evento;
     }
 
 
-    public function getStatus(string $receipt)
+    public function getStatus(Evento $evento)
     {
-        try {
+        $response = $this->tools->sefazConsultaRecibo($evento->recibo);
 
-            $xmlProtocolo = $this->tools->sefazConsultaRecibo($receipt);
+        $st = new Standardize();
+        $stdClass = $st->toStd($response);
 
-            return [
-                'sucesso' => true,
-                'codigo' => 1000,
-                'mensagem' => 'Protocolo recebido com sucesso',
-                'data' =>  $xmlProtocolo,
-            ];
+        if($stdClass->protNFe->infProt->cStat == 100){
 
-        } catch (Exception $e) {
-            return [
-                'sucesso' => false,
-                'codigo' => $e->getCode(),
-                'motivo' => $e->getMessage(),
-                'data' => null,
-            ];
+            $documento = Documento::find($evento->documento_id);
+
+            $documento->update([
+                'status' => 'autorizado',
+                'protocolo' => $stdClass->protNFe->infProt->nProt,
+            ]);
+
+            $documento = Documento::find($documento->id);
+
+            $documento->eventos()->create([
+                'nome_evento' => 'consulta_status_documento',
+                'codigo' => $stdClass->protNFe->infProt->cStat,
+                'mensagem_retorno' => $stdClass->protNFe->infProt->xMotivo,
+                'data_hora_evento' => Carbon::createFromFormat('c', $stdClass->protNFe->infProt->dhRecbto)->format('Y-m-d H:m:s'),
+                'recibo' => null,
+            ]);
+
+            return $response;
         }
+
+
     }
 
 
-    public function addProtocolIntoXml(string $signedXml, string $protocol)
+    public function addProtocolIntoXml(Documento $documento, string $protocol)
     {
-        try {
-            $request = $signedXml;
-            $response = $protocol;
+        $authorizedXml = Complements::toAuthorize(base64_decode($documento->conteudo_xml_assinado), $protocol);
 
+        $documento->update([
+            'conteudo_xml_autorizado' => base64_encode($authorizedXml),
+            'conteudo_xml_assinado' => ''
+        ]);
 
-            $xmlAuthorized = Complements::toAuthorize($request, $response);
+        $documento = Documento::find($documento->id);
 
-            return [
-                'sucesso' => true,
-                'codigo' => 1000,
-                'mensagem' => 'Protocolo recebido com sucesso',
-                'data' =>  $xmlAuthorized,
-            ];
-
-        } catch (Exception $e) {
-            return [
-                'sucesso' => false,
-                'codigo' => $e->getCode(),
-                'motivo' => $e->getMessage(),
-                'data' => null,
-            ];
-        }
+        return $documento;
     }
 
 

@@ -2,6 +2,7 @@
 
 namespace App\Services\dfe\nfe;
 
+use App\Models\Documento;
 use App\Services\dfe\DocumentosFiscaisAbstract;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -14,9 +15,9 @@ class NFeService extends DocumentosFiscaisAbstract
 {
     public function buildNFeXml(Request $request)
     {
-        try {
+        //try {
 
-            $csts_icms_st = new Collection(['10', '60', 'otheridshere']);
+            $csts_icms_st = new Collection(['10', '60']);
 
             $stdInfNfe = new stdClass();
             $stdInfNfe->versao = '4.00'; //versão do layout (string)
@@ -72,7 +73,7 @@ class NFeService extends DocumentosFiscaisAbstract
             $stdEnderecoEmitente->cMun = $request->input('emitente.endereco.codigo_municipio') ?? $this->emitente->cidade->codigo_ibge;
             $stdEnderecoEmitente->xMun = $request->input('emitente.endereco.nome_municipio') ?? $this->emitente->cidade->nome;
             $stdEnderecoEmitente->UF = $request->input('emitente.endereco.uf') ?? $this->emitente->cidade->estado->uf;
-            $stdEnderecoEmitente->CEP = $request->input('emitente.endereco.cep') ?? $this->emitente->complemento;
+            $stdEnderecoEmitente->CEP = $request->input('emitente.endereco.cep') ?? $this->emitente->codigo_postal;
             $stdEnderecoEmitente->cPais = 1058;
             $stdEnderecoEmitente->xPais = "Brasil";
             $stdEnderecoEmitente->fone = $request->input('emitente.endereco.telefone') ?? $this->emitente->telefone;
@@ -408,29 +409,29 @@ class NFeService extends DocumentosFiscaisAbstract
             $stdInfoAdic->infCpl = $request->input('informacoes_adicionais_contribuinte');
             $this->nfe->taginfAdic($stdInfoAdic);
 
-            $stdAutorizadoXml = new stdClass();
-            $stdAutorizadoXml->CNPJ = $request->input('pessoas_autorizadas.cnpj') ?? null; //indicar um CNPJ ou CPF
-            $stdAutorizadoXml->CPF = $request->input('pessoas_autorizadas.cpf') ?? null;
-            $this->nfe->tagautXML($stdAutorizadoXml);
 
-            $resp = $this->nfe->montaNFe();
+            foreach ($request->input('pessoas_autorizadas') as $key => $value) {
+                $stdAutorizadoXml = new stdClass();
+                $stdAutorizadoXml->CNPJ = $request->input("pessoas_autorizadas.{$key}.cnpj") ?? null; //indicar um CNPJ ou CPF
+                $stdAutorizadoXml->CPF = $request->input("pessoas_autorizadas.{$key}.cpf") ?? null;
+                $this->nfe->tagautXML($stdAutorizadoXml);
+            }
 
-            if(!$resp) {
+            $result = $this->nfe->montaNFe();
 
+            $chave = $this->nfe->getChave();
 
-
+            if($result) {
+                $xml = $this->nfe->getXML();
             }
 
             return [
-                'sucesso' => true,
-                'data' => $this->nfe->getXML(),
+                'chave' => $chave,
+                'numero' => $request->input("numero"),
+                'serie' => $request->input("serie"),
+                'xml' => $xml
             ];
 
-       } catch (Exception $e) {
-            return [
-                'sucesso' => false,
-            ];
-        }
     }
 
     public function buildDanfe(string $authorizedXml)

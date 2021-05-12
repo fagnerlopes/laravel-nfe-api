@@ -31,7 +31,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
 
     Route::get('/nfe/teste', [ NFeController::class, 'index' ]);
 
-    Route::post('/nfe', [ NFeController::class, 'store' ]);
+    Route::post('/nfe', [ NFeController::class, 'gerarNFe' ]);
 });
 
 

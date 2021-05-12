@@ -2,7 +2,9 @@
 
 namespace App\Services\dfe;
 
+use App\Models\Documento;
 use App\Models\Emitente;
+use App\Models\Evento;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -15,13 +17,13 @@ interface DocumentosFiscaisInterface
 
     public function buildNFeXml(Request $request);
 
-    public function assignXml(string $xml);
+    public function assignXml(array $data);
 
-    public function sendBatch(string $signedXml);
+    public function sendBatch(Documento $documento);
 
-    public function getStatus(string $receipt);
+    public function getStatus(Evento $evento);
 
-    public function addProtocolIntoXml(string $signedXml, string $protocol);
+    public function addProtocolIntoXml(Documento $documento, string $protocol);
 
     public function cancelNFe(array $data);
 

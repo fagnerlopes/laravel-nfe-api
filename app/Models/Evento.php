@@ -11,11 +11,13 @@ class Evento extends Model
     use HasFactory;
 
     protected $fillable = [
-        'emitente_id',
-        'chave',
-        'status',
-        'numero',
-        'serie'
+        'documento_id',
+        'nome_evento',
+        'codigo',
+        'data_hora_evento',
+        'mensagem_retorno',
+        'justificativa',
+        'recibo'
     ];
 
     protected $dates = ['deleted_at'];

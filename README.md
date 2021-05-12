@@ -199,5 +199,68 @@
 }
 ```
 
+# Exemplo de Rejeição
+### Consulta o status - Rejeição por NCM
+
+```
+{
+  "attributes": {
+    "versao": "4.00"
+  },
+  "tpAmb": "2",
+  "verAplic": "RS202104301543",
+  "nRec": "431022029094179",
+  "cStat": "104",
+  "xMotivo": "Lote processado",
+  "cUF": "43",
+  "dhRecbto": "2021-05-12T14:58:35-03:00",
+  "protNFe": {
+    "attributes": {
+      "versao": "4.00"
+    },
+    "infProt": {
+      "tpAmb": "2",
+      "verAplic": "RS202104301543",
+      "chNFe": "43210506103611000141550010000001911887566629",
+      "dhRecbto": "2021-05-12T14:58:35-03:00",
+      "digVal": "Db2QK+2Tw7YrDzBEsxVPmeLNMB8=",
+      "cStat": "778",
+      "xMotivo": "Rejeicao: Informado NCM inexistente [nItem:1]"
+    }
+  }
+}
+```
+
+### Rejeição por Duplicidade
+
+```
+{
+  "attributes": {
+    "versao": "4.00"
+  },
+  "tpAmb": "2",
+  "verAplic": "RS202104301543",
+  "nRec": "431022029094524",
+  "cStat": "104",
+  "xMotivo": "Lote processado",
+  "cUF": "43",
+  "dhRecbto": "2021-05-12T15:42:59-03:00",
+  "protNFe": {
+    "attributes": {
+      "versao": "4.00"
+    },
+    "infProt": {
+      "tpAmb": "2",
+      "verAplic": "RS202104301543",
+      "chNFe": "43210506103611000141550010000001911256500420",
+      "dhRecbto": "2021-05-12T15:42:59-03:00",
+      "digVal": "WsvFoJmtPoOn7W8EXy7Tlt68U\/c=",
+      "cStat": "539",
+      "xMotivo": "Rejeicao: Duplicidade de NF-e, com diferenca na Chave de Acesso [chNFe:43210506103611000141550010000001911593545241][nRec:431022029092399]"
+    }
+  }
+}
+```
+
 
 

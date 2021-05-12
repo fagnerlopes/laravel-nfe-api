@@ -16,6 +16,13 @@ class Documento extends Model
         'status',
         'numero',
         'serie',
+        'protocolo',
+        'conteudo_xml_assinado',
+        'caminho_xml_assinado',
+        'conteudo_xml_autorizado',
+        'caminho_xml_autorizado',
+        'conteudo_pdf',
+        'caminho_pdf'
     ];
 
     protected $dates = ['deleted_at'];

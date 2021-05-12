@@ -47,10 +47,12 @@ class AuthController extends Controller
 
             return $this->success([
                 'token' => $user->createToken('API Token')->plainTextToken
-            ], 'Token gerado com sucesso.');
+            ]);
 
         } catch (\Exception $e) {
-            return $this->error($e->getMessage(), 400);
+            return $this->error([
+                'error_message' => $e->getMessage(),
+            ]);
         }
 
     }
@@ -65,7 +67,9 @@ class AuthController extends Controller
         // loga e verifica se foi bem sucedida
         if (!Auth::attempt($payload))
         {
-            return $this->error('ops!! O login falhou. Verifique o usuário e senha.', 401);
+            return $this->error([
+                'error_message' => 'ops!! O login falhou. Verifique o usuário e senha.',
+            ]);
         }
 
         auth()->user()->tokens()->delete();
@@ -76,7 +80,7 @@ class AuthController extends Controller
 
         return $this->success([
             'token' => auth()->user()->createToken('API Token')->plainTextToken
-        ], 'Login bem sucedido.');
+        ]);
     }
 
 
@@ -84,8 +88,9 @@ class AuthController extends Controller
     {
         auth()->user()->tokens()->delete();
 
-        return $this->success([ ], 'Token revogado.');
-
+        return $this->success([
+            'success_message' => 'Token revogado. Faça login novamente para gerar um novo token',
+        ]);
     }
 }
 

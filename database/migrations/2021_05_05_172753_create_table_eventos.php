@@ -17,17 +17,12 @@ class CreateTableEventos extends Migration
             $table->id();
             $table->unsignedBigInteger('documento_id');
             $table->string('nome_evento', 30);
-            $table->text('conteudo_xml');
-            $table->string('caminho_xml');
-            $table->text('conteudo_pdf');
-            $table->string('caminho_pdf');
             $table->integer('codigo');
             $table->timestamp('data_hora_evento')->nullable();
-            $table->string('protocolo', 20);
+            $table->string('recibo', 30)->nullable();
             $table->text('mensagem_retorno');
-            $table->text('justificativa');
+            $table->text('justificativa')->nullable();
             $table->timestamps();
-            $table->softDeletes();
 
             if (Schema::hasTable('documentos')) {
                 $table->foreign('documento_id')->references('id')->on('documentos');

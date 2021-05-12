@@ -3,84 +3,83 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Documento;
+use App\Models\Evento;
 use App\Services\dfe\nfe\NFeService;
-use App\Traits\ApiResponser;
 use Exception;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class NFeController extends Controller
 {
-    use ApiResponser;
 
 
-    public function index(Request $request):JsonResponse
+    public function index(Request $request)
     {
         //return $this->success(['xml' => 'Conteudo do XML'], 'Login bem sucedido.');
         return 'OK';
     }
 
 
-    public function store(Request $request):JsonResponse
+    public function gerarNFe(Request $request)
     {
-//        try {
+        try {
             $emitente = auth()->user()->emitente;
 
             $nfeService = new NFeService($emitente, '55');
-//
-//            $xml = $nfeService->buildNFeXml($request);
-//
-//            $chave = $nfeService->getChave();
-//
-//            $signedXml = $nfeService->assignXml($xml);
-//
-//            if (isset($signedXml) && !empty($signedXml)) {
-//                $result = $nfeService->sendBatch($signedXml);
-//            }
-//
-//            if(!$result['sucesso']) {
-//                throw new Exception($result['motivo'], $result['codigo']);
-//            }
-//
-//            if (!is_null($result['recibo'])) {
-//                $protocol = $nfeService->getStatus($result['recibo']);
-//            }
-//
-//            if (isset($protocol) && !empty($protocol)) {
-//                $authorizedXml = $nfeService->addProtocolIntoXml($signedXml, $protocol);
-//
-//                $data = [
-//                    'sucesso' => $result['sucesso'],
-//                    'codigo' => $result['codigo'],
-//                    'mensagem' => $result['mensagem'],
-//                    'chave' => $chave,
-//                    'protocolo' => $protocol,
-//                    'xml' => base64_encode($authorizedXml),
-//                ];
-//            }
 
-            $data = $nfeService->sendAndAuthorizeNfe($request);
+            $arrayBuiltXml = $nfeService->buildNFeXml($request);
 
-            //return response()->json($this->successResponse($data));
+            $documento = $nfeService->assignXml($arrayBuiltXml);
 
-        return json_encode($data);
+            $evento = $nfeService->sendBatch($documento);
 
+            if(get_class($evento) !== Evento::class){
+                return response()->json($evento);
+            }
 
-//        } catch (Exception $e) {
-//            $erros = [];
-//            $errors = $nfeService->getErrors();
-//            foreach ($errors as $err) {
-//                array_push($erros, $err['desc']);
-//            }
-//
-//            $data = [
-//                'sucesso' => false,
-//                'codigo' => $e->getCode(),
-//                'mensagem' => $e->getMessage(),
-//                'erros' => $erros,
-//            ];
-//            return response()->json($this->errorResponse($data));
-//        }
+            $protocoloXml = $nfeService->getStatus($evento);
+
+            $documentoAutorizado = $nfeService->addProtocolIntoXml($documento, $protocoloXml);
+
+            $data = [
+                'sucesso' => true,
+                'mensagem' => 'Autorizado o uso do NF-e',
+                'chave' => $documentoAutorizado->chave,
+                'protocolo' => $documentoAutorizado->protocolo,
+                'xml' => base64_encode($documentoAutorizado->conteudo_xml_autorizado),
+                'status' => $documentoAutorizado->status,
+                'numero' => $documentoAutorizado->numero,
+                'serie' => $documentoAutorizado->serie
+            ];
+
+            //$data = $nfeService->sendAndAuthorizeNfe($data);
+
+            return response()->json($data);
+
+        } catch (Exception $e) {
+
+            $erros = $nfeService->getErrors();
+
+            $return_erros = [
+                'sucesso' => false,
+                'codigo' => 9999,
+                'mensagem' => 'Consulte o manual de integração',
+                'erros_xml' => $erros,
+            ];
+
+            if($erros) {
+                return response()->json($return_erros);
+            } else {
+                return response()->json([
+                    'sucesso' => false,
+                    'codigo' => $e->getCode(),
+                    'mensagem' => $e->getMessage(),
+                ]);
+            }
+
+        }
 
     }
 
