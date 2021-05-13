@@ -23,11 +23,9 @@ interface DocumentosFiscaisInterface
 
     public function getStatus(Evento $evento);
 
-    public function addProtocolIntoXml(Documento $documento, string $protocol);
+    public function addProtocolIntoXml(Documento $documento, string $protocolo);
 
-    public function cancelNFe(array $data);
-
-    public function sendAndAuthorizeNfe(Request $request);
+    public function cancelDocument(Documento $documento);
 
     public function getErrors();
 

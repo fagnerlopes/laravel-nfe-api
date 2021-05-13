@@ -1,18 +1,17 @@
 <?php
 
 namespace App\Http\Controllers\Api;
-
 use App\Http\Controllers\Controller;
 use App\Models\Documento;
-use App\Models\Evento;
 use App\Services\dfe\nfe\NFeService;
+use App\Traits\ApiResponser;
 use Exception;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
+
 
 class NFeController extends Controller
 {
+    use ApiResponser;
 
 
     public function index(Request $request)
@@ -29,32 +28,7 @@ class NFeController extends Controller
 
             $nfeService = new NFeService($emitente, '55');
 
-            $arrayBuiltXml = $nfeService->buildNFeXml($request);
-
-            $documento = $nfeService->assignXml($arrayBuiltXml);
-
-            $evento = $nfeService->sendBatch($documento);
-
-            if(get_class($evento) !== Evento::class){
-                return response()->json($evento);
-            }
-
-            $protocoloXml = $nfeService->getStatus($evento);
-
-            $documentoAutorizado = $nfeService->addProtocolIntoXml($documento, $protocoloXml);
-
-            $data = [
-                'sucesso' => true,
-                'mensagem' => 'Autorizado o uso do NF-e',
-                'chave' => $documentoAutorizado->chave,
-                'protocolo' => $documentoAutorizado->protocolo,
-                'xml' => base64_encode($documentoAutorizado->conteudo_xml_autorizado),
-                'status' => $documentoAutorizado->status,
-                'numero' => $documentoAutorizado->numero,
-                'serie' => $documentoAutorizado->serie
-            ];
-
-            //$data = $nfeService->sendAndAuthorizeNfe($data);
+            $data = $nfeService->sendAndAuthorizeNfe($request);
 
             return response()->json($data);
 
@@ -84,20 +58,30 @@ class NFeController extends Controller
     }
 
 
-    public function show($id)
+    public function consultaDfe($chave)
     {
-        //
+        if(!$chave) {
+            throw  new Exception('O parâmetro chave é obrigatório', 9003);
+        }
+
+        if(strlen($chave) !== 44) {
+            throw  new Exception('A chave informada é inválida. Deve ter 44 caracteres', 9004);
+        }
+
+        $documento = Documento::where('chave', $chave)->get();
+
+        if(!$documento) {
+            throw  new Exception('O documento solicitado não foi encontrado', 9005);
+        }
+
+        return response()->json([
+            'sucesso' => true,
+            'codigo' => 1000,
+            'mensagem' => 'Solicitação processada.',
+            'data' => json_decode(json_encode($documento))
+        ]);
     }
 
 
-    public function update(Request $request, $id)
-    {
-        //
-    }
 
-
-    public function destroy($id)
-    {
-        //
-    }
 }

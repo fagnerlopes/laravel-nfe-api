@@ -3,9 +3,11 @@
 namespace App\Services\dfe\nfe;
 
 use App\Models\Documento;
+use App\Models\Evento;
 use App\Services\dfe\DocumentosFiscaisAbstract;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Storage;
 use NFePHP\DA\NFe\Danfe;
 use stdClass;
 use Symfony\Component\Console\Input\Input;
@@ -434,11 +436,13 @@ class NFeService extends DocumentosFiscaisAbstract
 
     }
 
-    public function buildDanfe(string $authorizedXml)
+    public function buildDanfe(Documento $documento)
     {
 
-            $xml = file_get_contents('app/storage/orbe_do_brasil_ltda/xml_dfe_files/2021/abril/16/xmlDfe-43210406103611000141550010000001831013821390.xml');
-            $logo = 'data://text/plain;base64,'. base64_encode(file_get_contents('app/storage/orbe_do_brasil_ltda/logo_nfe.jpg'));
+
+        //$logo = 'data://text/plain;base64,'. base64_encode(Storage::get('app/public/logo_nfe.jpg'));
+
+        $logo = null;
 
         try {
             //$danfe = new DanfeSimples($xml);
@@ -455,7 +459,7 @@ class NFeService extends DocumentosFiscaisAbstract
             //Gera o PDF
             //$pdf = $danfe->render($logo);
 
-            $danfe = new Danfe($authorizedXml);
+            $danfe = new Danfe(base64_decode($documento->conteudo_xml_autorizado));
             $danfe->debugMode(false);
 
             //$danfe->creditsIntegratorFooter('WEBNFe Sistemas - http://www.webenf.com.br');
@@ -470,14 +474,65 @@ class NFeService extends DocumentosFiscaisAbstract
             //Gera o PDF
             $pdf = $danfe->render($logo);
 
-            Util::savePDF($pdf, "danfe-{$this->chave}");
+            //Util::savePDF($pdf, "danfe-{$this->chave}");
 
-            return $pdf;
+            if ($pdf) {
+                $documento->update([
+                    'conteudo_pdf' => base64_encode($pdf)
+                ]);
+            }
+
+            $documento = Documento::find($documento->id);
+
+
+            return $documento;
 
             //header('Content-Type: application/pdf');
         } catch (InvalidArgumentException $e) {
             echo "Ocorreu um erro durante o processamento :" . $e->getMessage();
         }
+
+    }
+
+    public function sendAndAuthorizeNfe(Request $request)
+    {
+
+        $emitente = auth()->user()->emitente;
+
+        $nfeService = new NFeService($emitente, '55');
+
+        $arrayBuiltXml = $nfeService->buildNFeXml($request);
+
+        $documento = $nfeService->assignXml($arrayBuiltXml);
+
+        $evento = $nfeService->sendBatch($documento);
+
+        if(get_class($evento) !== Evento::class){
+            return response()->json($evento);
+        }
+
+        $protocoloXml = $nfeService->getStatus($evento);
+
+        $documentoAutorizado = $nfeService->addProtocolIntoXml($documento, $protocoloXml);;
+
+        $documentoDanfe = $nfeService->buildDanfe($documentoAutorizado);
+
+        $eventos = $documentoDanfe->eventos()->select()->get();
+
+        $data = [
+            'sucesso' => true,
+            'mensagem' => 'Autorizado o uso do NF-e',
+            'chave' => $documentoAutorizado->chave,
+            'protocolo' => $documentoAutorizado->protocolo,
+            'status' => $documentoAutorizado->status,
+            'numero' => $documentoAutorizado->numero,
+            'serie' => $documentoAutorizado->serie,
+            'xml' => $documentoAutorizado->conteudo_xml_autorizado,
+            'pdf' => $documentoDanfe->conteudo_pdf,
+            'historico' => json_decode(json_encode($eventos))
+        ];
+
+        return $data;
 
     }
 

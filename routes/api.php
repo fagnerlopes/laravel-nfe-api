@@ -29,9 +29,17 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
 
     Route::post('auth/logout', [AuthController::class, 'logout']);
 
-    Route::get('/nfe/teste', [ NFeController::class, 'index' ]);
+    Route::prefix('nfe')->group(function (){
+        Route::get('status', [ NFeController::class, 'consultaStatus' ]);
 
-    Route::post('/nfe', [ NFeController::class, 'gerarNFe' ]);
+        Route::get('/{chave}', [ NFeController::class, 'consultaDfe' ]);
+
+        Route::post('cancela', [ NFeController::class, 'cancelaDfe' ]);
+
+        Route::post('/', [ NFeController::class, 'gerarNFe' ]);
+    });
+
+
 });
 
 

@@ -115,7 +115,6 @@ abstract class DocumentosFiscaisAbstract implements DocumentosFiscaisInterface
                 }
             }
         }
-
     }
 
 
@@ -132,7 +131,8 @@ abstract class DocumentosFiscaisAbstract implements DocumentosFiscaisInterface
             'nome_evento' => 'envio_lote',
             'codigo' => $stdClass->cStat,
             'mensagem_retorno' => $stdClass->xMotivo,
-            'data_hora_evento' => Carbon::createFromFormat('c', $stdClass->dhRecbto)->format('Y-m-d H:m:s'),
+            'data_hora_evento' => Carbon::parse($stdClass->dhRecbto),
+            //'data_hora_evento' => Carbon::createFromFormat('c', $stdClass->dhRecbto),
             'recibo' => $stdClass->infRec->nRec,
         ];
 
@@ -147,10 +147,11 @@ abstract class DocumentosFiscaisAbstract implements DocumentosFiscaisInterface
 
     public function getStatus(Evento $evento)
     {
-        $response = $this->tools->sefazConsultaRecibo($evento->recibo);
+        $protocolo = $this->tools->sefazConsultaRecibo($evento->recibo);
+
 
         $st = new Standardize();
-        $stdClass = $st->toStd($response);
+        $stdClass = $st->toStd($protocolo);
 
         if($stdClass->protNFe->infProt->cStat == 100){
 
@@ -159,6 +160,7 @@ abstract class DocumentosFiscaisAbstract implements DocumentosFiscaisInterface
             $documento->update([
                 'status' => 'autorizado',
                 'protocolo' => $stdClass->protNFe->infProt->nProt,
+                ''
             ]);
 
             $documento = Documento::find($documento->id);
@@ -170,17 +172,14 @@ abstract class DocumentosFiscaisAbstract implements DocumentosFiscaisInterface
                 'data_hora_evento' => Carbon::createFromFormat('c', $stdClass->protNFe->infProt->dhRecbto)->format('Y-m-d H:m:s'),
                 'recibo' => null,
             ]);
-
-            return $response;
         }
-
-
+        return $protocolo;
     }
 
 
-    public function addProtocolIntoXml(Documento $documento, string $protocol)
+    public function addProtocolIntoXml(Documento $documento, string $protocolo)
     {
-        $authorizedXml = Complements::toAuthorize(base64_decode($documento->conteudo_xml_assinado), $protocol);
+        $authorizedXml = Complements::toAuthorize(base64_decode($documento->conteudo_xml_assinado), $protocolo);
 
         $documento->update([
             'conteudo_xml_autorizado' => base64_encode($authorizedXml),
@@ -194,12 +193,12 @@ abstract class DocumentosFiscaisAbstract implements DocumentosFiscaisInterface
 
 
 
-    public function cancelNFe(array $nfe)
+    public function cancelDocument(Documento $documento)
     {
         try {
             $this->tools->model('55');
 
-            $chave = '43210406103611000141550010000001731013821394';
+            $chave = $documento->chave;
             $xJust = 'Erro de digitação nos dados dos produtos';
             $nProt = '143210000197293';
             $response = $this->tools->sefazCancela($chave, $xJust, $nProt);
@@ -239,46 +238,6 @@ abstract class DocumentosFiscaisAbstract implements DocumentosFiscaisInterface
                 'data' => null,
             ];
         }
-
-    }
-
-
-    public function sendAndAuthorizeNfe(Request $request)
-    {
-
-        $resultXml = $this->buildNFeXml($request);
-
-        if($resultXml['sucesso']){
-            $resultXmlSigned = $this->assignXml($resultXml['data']);
-        } else {
-            return $resultXml;
-        }
-
-        if ($resultXmlSigned['sucesso']) {
-            $signedXml = $resultXmlSigned['data'];
-            $resultSendBatch = $this->sendBatch($signedXml);
-        } else {
-            return $resultXmlSigned;
-        }
-
-        if ($resultSendBatch['sucesso']) {
-            $resultStatus = $this->getStatus($resultSendBatch['data']);
-        } else {
-            return $resultSendBatch;
-        }
-
-        if ($resultStatus['sucesso']) {
-            $authorizedXml = $this->addProtocolIntoXml($signedXml, $resultStatus['data']);
-        } else {
-            return $resultStatus;
-        }
-
-        return [
-            'sucesso' => true,
-            'codigo' => 1000,
-            'mensagem' => 'Solicitação processada com sucesso',
-            'data' =>  $authorizedXml,
-        ];
 
     }
 

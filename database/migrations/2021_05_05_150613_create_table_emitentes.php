@@ -24,6 +24,7 @@ class CreateTableEmitentes extends Migration
             $table->string('codigo_csc')->nullable();
             $table->string('inscricao_estadual', 20)->nullable();
             $table->string('inscricao_municipal', 20)->nullable();
+            $table->text('conteudo_logotipo')->nullable();
             $table->text('conteudo_certificado')->nullable();
             $table->text('caminho_certificado')->nullable();
             $table->text('senha_certificado')->nullable();

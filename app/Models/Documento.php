@@ -25,6 +25,11 @@ class Documento extends Model
         'caminho_pdf'
     ];
 
+    protected $hidden = [
+        'id',
+        'emitente_id'
+    ];
+
     protected $dates = ['deleted_at'];
 
     public function emitente(){

@@ -20,6 +20,8 @@ class Evento extends Model
         'recibo'
     ];
 
+    protected $hidden = ['id', 'documento_id', 'updated_at' ];
+
     protected $dates = ['deleted_at'];
 
     public function documento(){
