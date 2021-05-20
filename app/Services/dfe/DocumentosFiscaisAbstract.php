@@ -155,24 +155,39 @@ abstract class DocumentosFiscaisAbstract implements DocumentosFiscaisInterface
 
         if($stdClass->protNFe->infProt->cStat == 100){
 
-            $documento = Documento::find($evento->documento_id);
+            DB::beginTransaction();
 
-            $documento->update([
-                'status' => 'autorizado',
-                'protocolo' => $stdClass->protNFe->infProt->nProt,
-                ''
-            ]);
+            try {
+                $documento = Documento::find($evento->documento_id);
 
-            $documento = Documento::find($documento->id);
+                $documento->update([
+                    'status' => 'autorizado',
+                    'protocolo' => $stdClass->protNFe->infProt->nProt,
+                    ''
+                ]);
 
-            $documento->eventos()->create([
-                'nome_evento' => 'consulta_status_documento',
-                'codigo' => $stdClass->protNFe->infProt->cStat,
-                'mensagem_retorno' => $stdClass->protNFe->infProt->xMotivo,
-                'data_hora_evento' => Carbon::createFromFormat('c', $stdClass->protNFe->infProt->dhRecbto)->format('Y-m-d H:m:s'),
-                'recibo' => null,
-            ]);
+                $documento = Documento::find($documento->id);
+
+                $documento->eventos()->create([
+                    'nome_evento' => 'consulta_status_documento',
+                    'codigo' => $stdClass->protNFe->infProt->cStat,
+                    'mensagem_retorno' => $stdClass->protNFe->infProt->xMotivo,
+                    'data_hora_evento' => Carbon::createFromFormat('c', $stdClass->protNFe->infProt->dhRecbto)->format('Y-m-d H:m:s'),
+                    'recibo' => null,
+                ]);
+
+                DB::commit();
+
+            } catch (Exception $e) {
+                DB::rollBack();
+                return [
+                    'sucesso' => false,
+                    'codigo' => 9999,
+                    'mensagem' => 'Falha ao consultar o status do documento'
+                ];
+            }
         }
+
         return $protocolo;
     }
 
@@ -181,10 +196,20 @@ abstract class DocumentosFiscaisAbstract implements DocumentosFiscaisInterface
     {
         $authorizedXml = Complements::toAuthorize(base64_decode($documento->conteudo_xml_assinado), $protocolo);
 
-        $documento->update([
-            'conteudo_xml_autorizado' => base64_encode($authorizedXml),
-            'conteudo_xml_assinado' => ''
-        ]);
+        DB::beginTransaction();
+        try {
+
+            $documento->update([
+                'conteudo_xml_autorizado' => base64_encode($authorizedXml),
+                'conteudo_xml_assinado' => ''
+            ]);
+            DB::commit();
+
+        } catch(Exception $e) {
+            DB::rollBack();
+        }
+
+
 
         $documento = Documento::find($documento->id);
 

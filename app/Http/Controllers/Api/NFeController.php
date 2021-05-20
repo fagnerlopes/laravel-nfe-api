@@ -82,6 +82,12 @@ class NFeController extends Controller
         ]);
     }
 
+    public function cancelaDfe($chave)
+    {
+        //
+
+    }
+
 
 
 }
