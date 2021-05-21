@@ -23,7 +23,7 @@ interface DocumentosFiscaisInterface
 
     public function getStatus(Evento $evento);
 
-    public function addProtocolIntoXml(Documento $documento, string $protocolo);
+    public function addProtocolIntoXml(Documento $documento, $protocolo);
 
     public function cancelDocument(Documento $documento);
 

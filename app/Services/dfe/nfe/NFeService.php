@@ -5,6 +5,7 @@ namespace App\Services\dfe\nfe;
 use App\Models\Documento;
 use App\Models\Evento;
 use App\Services\dfe\DocumentosFiscaisAbstract;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
@@ -17,7 +18,7 @@ class NFeService extends DocumentosFiscaisAbstract
 {
     public function buildNFeXml(Request $request)
     {
-        //try {
+        try {
 
             $csts_icms_st = new Collection(['10', '60']);
 
@@ -59,7 +60,7 @@ class NFeService extends DocumentosFiscaisAbstract
             $stdEmitente->xNome = $this->emitente->razao_social;
             $stdEmitente->xFant = $this->emitente->fantasia;
             $stdEmitente->IE = $this->emitente->inscricao_estadual;
-            $stdEmitente->IEST =  $request->input('inscricao_estadual_st') ? $request->input('inscricao_estadual_st') : null;
+            $stdEmitente->IEST = $request->input('inscricao_estadual_st') ? $request->input('inscricao_estadual_st') : null;
             $stdEmitente->IM = $request->input('inscricao_municipal') ? $request->input('inscricao_municipal') : null;
             $stdEmitente->CNAE = null;
             $stdEmitente->CRT = $this->emitente->regime_tributario;
@@ -107,7 +108,7 @@ class NFeService extends DocumentosFiscaisAbstract
             $stdEnderecoDestinatario->fone = $request->input('destinatario.endereco.telefone');
             $this->nfe->tagenderDest($stdEnderecoDestinatario);
 
-            if(!is_null($request->input('itens'))) {
+            if (!is_null($request->input('itens'))) {
 
 
                 foreach ($request->input('itens') as $key => $item) {
@@ -325,7 +326,7 @@ class NFeService extends DocumentosFiscaisAbstract
             $stdFrete->modFrete = $request->input("frete.modalidade_frete") ?? 9;
             $this->nfe->tagtransp($stdFrete);
 
-            if($request->input("frete.modalidade_frete") !== '9') {
+            if ($request->input("frete.modalidade_frete") !== '9') {
 
                 $stdTransportadora = new stdClass();
                 $stdTransportadora->xNome = $request->input("frete.transportador.nome");
@@ -343,11 +344,11 @@ class NFeService extends DocumentosFiscaisAbstract
                 $stdVeiculoTrator->RNTC = $request->input("frete.veiculo.rntc");
                 $this->nfe->tagveicTransp($stdVeiculoTrator);
 
-                if(!is_null($request->input('frete.veiculo.reboques'))){
+                if (!is_null($request->input('frete.veiculo.reboques'))) {
                     foreach ($request->input('frete.veiculo.reboques') as $key => $item) {
 
                         $stdReboque = new stdClass();
-                        $stdReboque->placa =  $request->input("frete.veiculo.reboques.{$key}.placa");
+                        $stdReboque->placa = $request->input("frete.veiculo.reboques.{$key}.placa");
                         $stdReboque->UF = $request->input("frete.veiculo.reboques.{$key}.uf");
                         $stdReboque->RNTC = $request->input("frete.veiculo.reboques.{$key}.rntc");
                         $this->nfe->tagreboque($stdReboque);
@@ -356,8 +357,7 @@ class NFeService extends DocumentosFiscaisAbstract
             }
 
 
-
-            if(!is_null($request->input('frete.volumes s'))) {
+            if (!is_null($request->input('frete.volumes s'))) {
                 foreach ($request->input('frete.volumes ') as $key => $item) {
                     $stdVolumes = new stdClass();
                     $stdVolumes->item = $key++; //indicativo do numero do volume
@@ -378,7 +378,7 @@ class NFeService extends DocumentosFiscaisAbstract
             $stdFaturaCobranca->vLiq = $request->input("cobranca.fatura.valor_liquido");
             $this->nfe->tagfat($stdFaturaCobranca);
 
-            if(!is_null($request->input('cobranca.duplicatas'))){
+            if (!is_null($request->input('cobranca.duplicatas'))) {
                 foreach ($request->input('cobranca.duplicatas') as $key => $item) {
                     $stdDuplicata = new stdClass();
                     $stdDuplicata->nDup = $key++;
@@ -392,7 +392,7 @@ class NFeService extends DocumentosFiscaisAbstract
             $stdPagamento->vTroco = $request->input('pagamento.valor_troco');
             $this->nfe->tagpag($stdPagamento);
 
-            if(!is_null($request->input('pagamento.formas_pagamento'))){
+            if (!is_null($request->input('pagamento.formas_pagamento'))) {
                 foreach ($request->input('pagamento.formas_pagamento') as $key => $item) {
                     $stdDetalhePagamento = new stdClass();
                     $stdDetalhePagamento->tPag = $request->input("pagamento.formas_pagamento.{$key}.meio_pagamento");
@@ -423,16 +423,29 @@ class NFeService extends DocumentosFiscaisAbstract
 
             $chave = $this->nfe->getChave();
 
-            if($result) {
+            if ($result) {
                 $xml = $this->nfe->getXML();
             }
 
             return [
+                'sucesso' => true,
                 'chave' => $chave,
                 'numero' => $request->input("numero"),
                 'serie' => $request->input("serie"),
-                'xml' => $xml
+                'data' => $xml
             ];
+        } catch (Exception $e) {
+            return [
+                'sucesso' => false,
+                'chave' => $chave,
+                'numero' => $request->input("numero"),
+                'serie' => $request->input("serie"),
+                'data' => $xml
+            ];
+
+
+
+        }
 
     }
 
@@ -484,55 +497,95 @@ class NFeService extends DocumentosFiscaisAbstract
 
             $documento = Documento::find($documento->id);
 
-
             return $documento;
 
-            //header('Content-Type: application/pdf');
-        } catch (InvalidArgumentException $e) {
-            echo "Ocorreu um erro durante o processamento :" . $e->getMessage();
+        } catch (Exception $e) {
+
         }
 
     }
 
     public function sendAndAuthorizeNfe(Request $request)
     {
+        try {
 
-        $emitente = auth()->user()->emitente;
 
-        $nfeService = new NFeService($emitente, '55');
+            $emitente = auth()->user()->emitente;
 
-        $arrayBuiltXml = $nfeService->buildNFeXml($request);
+            $nfeService = new NFeService($emitente, '55');
 
-        $documento = $nfeService->assignXml($arrayBuiltXml);
+            $result = $nfeService->buildNFeXml($request);
 
-        $evento = $nfeService->sendBatch($documento);
+            if(!$result['sucesso']){
+                return $result;
+            }
 
-        if(get_class($evento) !== Evento::class){
-            return response()->json($evento);
+            $documento = $nfeService->assignXml($result);
+
+            $evento = $nfeService->sendBatch($documento);
+
+            if (get_class($evento) !== Evento::class) {
+                return response()->json($evento);
+            }
+
+            $result = $nfeService->getStatus($evento);
+
+            if (!$result['sucesso']) {
+                return $result;
+            }
+
+            $result = $nfeService->addProtocolIntoXml($documento, $result['data']);
+
+            if (!$result['sucesso']) {
+                return $result;
+            }
+
+            $documentoAutorizado = $result['data'];
+
+            $documentoDanfe = $nfeService->buildDanfe($documentoAutorizado);
+
+            $eventos = $documentoDanfe->eventos()->select()->get();
+
+            $data = [
+                'sucesso' => true,
+                'mensagem' => 'Autorizado o uso do NF-e',
+                'chave' => $documentoAutorizado->chave,
+                'protocolo' => $documentoAutorizado->protocolo,
+                'status' => $documentoAutorizado->status,
+                'numero' => $documentoAutorizado->numero,
+                'serie' => $documentoAutorizado->serie,
+                'xml' => $documentoAutorizado->conteudo_xml_autorizado,
+                'pdf' => $documentoDanfe->conteudo_pdf,
+                'historico' => json_decode(json_encode($eventos))
+            ];
+
+            return $data;
+
+        } catch (Exception $e) {
+
+            $erros = $nfeService->getErrors();
+
+            $return_erros = [
+                'sucesso' => false,
+                'codigo' => 9999,
+                'mensagem' => 'O XML contém erros de preenchimento.',
+                'correcao' => 'Consulte o manual de integração para o correto preenchimento do JSON.',
+                'data' => $erros,
+            ];
+
+            if(!is_null($erros)) {
+                return response()->json($return_erros);
+            } else {
+                return [
+                    'sucesso' => false,
+                    'codigo' => $e->getCode(),
+                    'mensagem' => 'Houve uma falha ao montar o XML',
+                    'data' => null
+                ];
+            }
+
+
         }
-
-        $protocoloXml = $nfeService->getStatus($evento);
-
-        $documentoAutorizado = $nfeService->addProtocolIntoXml($documento, $protocoloXml);;
-
-        $documentoDanfe = $nfeService->buildDanfe($documentoAutorizado);
-
-        $eventos = $documentoDanfe->eventos()->select()->get();
-
-        $data = [
-            'sucesso' => true,
-            'mensagem' => 'Autorizado o uso do NF-e',
-            'chave' => $documentoAutorizado->chave,
-            'protocolo' => $documentoAutorizado->protocolo,
-            'status' => $documentoAutorizado->status,
-            'numero' => $documentoAutorizado->numero,
-            'serie' => $documentoAutorizado->serie,
-            'xml' => $documentoAutorizado->conteudo_xml_autorizado,
-            'pdf' => $documentoDanfe->conteudo_pdf,
-            'historico' => json_decode(json_encode($eventos))
-        ];
-
-        return $data;
 
     }
 

@@ -82,6 +82,7 @@ abstract class DocumentosFiscaisAbstract implements DocumentosFiscaisInterface
                 'mensagem' => 'Processamento Ok'
             ];
 
+
         } catch (Exception $e) {
             return [
                 'sucesso' => false,
@@ -98,8 +99,8 @@ abstract class DocumentosFiscaisAbstract implements DocumentosFiscaisInterface
     public function assignXml(array $data)
     {
         if(!is_null($data)) {
-            if(!is_null($data['xml'])) {
-                $xmlsigned = $this->tools->signNFe($data['xml']);
+            if(!is_null($data['data'])) {
+                $xmlsigned = $this->tools->signNFe($data['data']);
 
                 $documentoData = [
                     'chave' => $data['chave'],
@@ -149,9 +150,22 @@ abstract class DocumentosFiscaisAbstract implements DocumentosFiscaisInterface
     {
         $protocolo = $this->tools->sefazConsultaRecibo($evento->recibo);
 
+//        if(!is_null($protocolo) || empty($protocolo)) {
+//            return $protocolo;
+//        }
+
 
         $st = new Standardize();
         $stdClass = $st->toStd($protocolo);
+
+        if($stdClass->protNFe->infProt->cStat != 100) {
+            return [
+                'sucesso' => false,
+                'codigo' => $stdClass->protNFe->infProt->cStat,
+                'mensagem' => $stdClass->protNFe->infProt->xMotivo,
+                'data' => []
+            ];
+        }
 
         if($stdClass->protNFe->infProt->cStat == 100){
 
@@ -178,22 +192,41 @@ abstract class DocumentosFiscaisAbstract implements DocumentosFiscaisInterface
 
                 DB::commit();
 
+                return [
+                    'sucesso' => true,
+                    'codigo' => 100,
+                    'mensagem' => 'Documento fiscal autorizado com sucesso.',
+                    'data' => $protocolo
+                ];
+
+
             } catch (Exception $e) {
                 DB::rollBack();
                 return [
                     'sucesso' => false,
-                    'codigo' => 9999,
-                    'mensagem' => 'Falha ao consultar o status do documento'
+                    'codigo' => $e->getCode(),
+                    'mensagem' => 'Falha ao consultar o status do documento',
+                    'correcao' => 'Entre em contato com o suporte',
+                    'data' => null
                 ];
             }
         }
 
-        return $protocolo;
+
     }
 
 
-    public function addProtocolIntoXml(Documento $documento, string $protocolo)
+    public function addProtocolIntoXml(Documento $documento, $protocolo)
     {
+        if(is_null($documento->conteudo_xml_assinado) || empty($documento->conteudo_xml_assinado)){
+            return [
+                'sucesso' => false,
+                'codigo' => 9000,
+                'mensagem' => 'Erro ao autorizar o documento. Entre em contato com o suporte.',
+                'data' => []
+            ];
+        }
+
         $authorizedXml = Complements::toAuthorize(base64_decode($documento->conteudo_xml_assinado), $protocolo);
 
         DB::beginTransaction();
@@ -205,15 +238,26 @@ abstract class DocumentosFiscaisAbstract implements DocumentosFiscaisInterface
             ]);
             DB::commit();
 
+            $documento = Documento::find($documento->id);
+
+            return [
+                'sucesso' => true,
+                'codigo' => 6000,
+                'mensagem' => 'Documento fiscal autorizado com sucesso.',
+                'data' => $documento
+            ];
+
         } catch(Exception $e) {
             DB::rollBack();
+
+            return [
+                'sucesso' => false,
+                'codigo' => 9000,
+                'mensagem' => 'Erro ao autorizar o documento. Entre em contato com o suporte.',
+                'data' => []
+            ];
         }
 
-
-
-        $documento = Documento::find($documento->id);
-
-        return $documento;
     }
 
 

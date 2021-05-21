@@ -14,13 +14,6 @@ class NFeController extends Controller
     use ApiResponser;
 
 
-    public function index(Request $request)
-    {
-        //return $this->success(['xml' => 'Conteudo do XML'], 'Login bem sucedido.');
-        return 'OK';
-    }
-
-
     public function gerarNFe(Request $request)
     {
         try {
@@ -34,25 +27,13 @@ class NFeController extends Controller
 
         } catch (Exception $e) {
 
-            $erros = $nfeService->getErrors();
 
-            $return_erros = [
-                'sucesso' => false,
-                'codigo' => 9999,
-                'mensagem' => 'Consulte o manual de integração',
-                'erros_xml' => $erros,
-            ];
-
-            if($erros) {
-                return response()->json($return_erros);
-            } else {
-                return response()->json([
-                    'sucesso' => false,
-                    'codigo' => $e->getCode(),
-                    'mensagem' => $e->getMessage(),
-                ]);
-            }
-
+//            return [
+//                'sucesso' => false,
+//                'codigo' => $e->getCode(),
+//                'mensagem' => 'Vai se fuder',
+//                'data' => null
+//            ];
         }
 
     }
